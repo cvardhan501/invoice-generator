@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Reset Invoice Generator PIN</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f1f4f8;font-family:Arial,sans-serif;color:#1a2332}
+    .card{width:min(92vw,420px);background:#fff;padding:30px;border-radius:14px;box-shadow:0 12px 40px #12345f18}
+    h1{font-size:24px;margin:0 0 10px}
+    p{line-height:1.55;color:#54617a}
+    input{width:100%;padding:13px;margin:7px 0;border:1px solid #c8d2e0;border-radius:7px;font-size:18px;letter-spacing:5px}
+    button{width:100%;padding:13px;background:#1e4b8c;color:white;border:0;border-radius:7px;font-size:16px;font-weight:bold;margin-top:12px;cursor:pointer}
+    button:disabled{opacity:.6}
+    #message{min-height:24px;font-size:14px;color:#a93226;letter-spacing:0}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Reset your PIN</h1>
+    <p>Choose a new 4-digit PIN. This reset link is single-use and expires after 15 minutes. Open this page in the same browser profile where you use the Invoice Generator.</p>
+    <form id="resetForm">
+      <input id="pin" type="password" inputmode="numeric" autocomplete="new-password" maxlength="4" pattern="[0-9]{4}" placeholder="New 4-digit PIN" aria-label="New 4-digit PIN" required>
+      <input id="confirm" type="password" inputmode="numeric" autocomplete="new-password" maxlength="4" pattern="[0-9]{4}" placeholder="Confirm PIN" aria-label="Confirm new PIN" required>
+      <button id="submit" type="submit">Reset PIN</button>
+    </form>
+    <p id="message" role="status" aria-live="polite"></p>
+  </main>
+  <script>
+    const token=new URLSearchParams(location.search).get('token')||'';
+    const form=document.getElementById('resetForm');
+    const message=document.getElementById('message');
+    const button=document.getElementById('submit');
+
+    if(token) history.replaceState(null,document.title,location.pathname);
+
+    if(!/^[a-f0-9]{64}$/.test(token)){
+      form.hidden=true;
+      message.textContent='The reset link is missing or malformed. Request a new link from the app.';
+    }
+
+    form.addEventListener('submit',async event=>{
+      event.preventDefault();
+      const pin=document.getElementById('pin').value;
+      const confirm=document.getElementById('confirm').value;
+      message.style.color='#a93226';
+      message.textContent='';
+      if(!/^\d{4}$/.test(pin)){message.textContent='Enter exactly four digits.';return;}
+      if(pin!==confirm){message.textContent='PINs do not match.';return;}
+
+      button.disabled=true;
+      button.textContent='Verifying…';
+      try{
+        const apiEndpoint = (window.location.port === '5500' || window.location.origin.includes(':5500'))
+          ? 'http://localhost:3000/api/auth/complete-reset'
+          : '/api/auth/complete-reset';
+
+        const response=await fetch(apiEndpoint,{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({token,pin})
+        });
+        const result=await response.json().catch(()=>({}));
+        if(!response.ok) throw new Error(result.error||'Unable to verify the reset link.');
+
+        // Clean up any legacy localStorage PIN hashes
+        try {
+          localStorage.removeItem('invGen_pinHash_v1');
+          localStorage.removeItem('invGen_pinRecoveryHash_v1');
+          localStorage.removeItem('invGen_pinRecoveryPending_v1');
+          sessionStorage.removeItem('invGen_sessionUnlocked');
+        } catch {}
+
+        message.style.color='#1e7b4d';
+        message.innerHTML='<strong>PIN reset successfully on the server!</strong><br><br>The new PIN is now active across all browsers and devices.<br><br><a href="/" style="display:inline-block;background:#1e4b8c;color:#fff;padding:11px 20px;border-radius:6px;text-decoration:none;font-weight:bold;margin-top:8px">Open Invoice Generator</a>';
+        form.hidden=true;
+      }catch(error){
+        let msg = error.message || 'Unable to reset the PIN. Request a new reset link if this link has expired.';
+        if(!navigator.onLine){
+          msg = 'No internet connection. Please check your network and try again.';
+        } else if(error instanceof TypeError){
+          msg = 'Could not contact the backend on port 3000. Ensure the Node.js server is running.';
+        }
+        message.textContent = msg;
+      }finally{
+        button.disabled=false;
+        button.textContent='Reset PIN';
+      }
+    });
+  </script>
+</body>
+</html>

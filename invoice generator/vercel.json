@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    }
+  ],
+  "rewrites": [
+    { "source": "/Invoice%20Generator.html", "destination": "/index.html" },
+    { "source": "/Invoice Generator.html", "destination": "/index.html" },
+    { "source": "/api/auth-status", "destination": "/api/auth/status" },
+    { "source": "/api/verify-pin", "destination": "/api/auth/login" },
+    { "source": "/api/initialize-pin", "destination": "/api/auth/setup" },
+    { "source": "/api/request-pin-reset", "destination": "/api/auth/request-reset" },
+    { "source": "/api/complete-pin-reset", "destination": "/api/auth/complete-reset" }
+  ]
+}

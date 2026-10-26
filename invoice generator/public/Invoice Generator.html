@@ -1,0 +1,2206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invoice Generator | Aluminium Fabrication Works</title>
+<link rel="icon" type="image/png" href="Invoice Generator App Logo.png">
+<!-- Optional online fonts are intentionally omitted: system-font fallbacks keep the app fully usable offline. -->
+<link rel="icon" type="image/png" href="Invoice Generator App Logo.png">
+<style>
+/* =====================================================================
+   INVOICE GENERATOR — STYLESHEET
+   Palette: deep industrial blue #1E4B8C, steel accent #4A6FA5,
+   graphite text #1A2332, hairline border #D7DEE7, panel #F4F6F9
+   ===================================================================== */
+
+:root{
+  --blue-900:#12345F;
+  --blue-700:#1E4B8C;
+  --blue-500:#4A6FA5;
+  --blue-100:#E7EEF7;
+  --steel-50:#F4F6F9;
+  --ink:#1A2332;
+  --ink-soft:#54617A;
+  --line:#D7DEE7;
+  --line-strong:#B7C3D6;
+  --danger:#C0392B;
+  --danger-bg:#FDEDEB;
+  --ok:#1E7B4D;
+  --radius:8px;
+  --shadow:0 1px 2px rgba(18,52,95,.06), 0 4px 16px rgba(18,52,95,.08);
+  --font-ui:'Inter',system-ui,sans-serif;
+  --font-head:'Barlow Condensed',var(--font-ui);
+  --font-mono:'Roboto Mono',ui-monospace,monospace;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:var(--font-ui);
+  background:var(--steel-50);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+button, input, textarea{font-family:inherit;}
+
+/* ============ APP BAR ============ */
+.app-bar{
+  position:sticky; top:0; z-index:40;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 20px;
+  background:var(--blue-900);
+  color:#fff;
+  box-shadow:var(--shadow);
+}
+.app-bar__brand{display:flex; align-items:center; gap:12px;}
+.app-bar__mark{
+  font-family:var(--font-head); font-weight:700; font-size:20px;
+  background:var(--blue-500); color:#fff;
+  width:38px; height:38px; border-radius:6px;
+  display:flex; align-items:center; justify-content:center;
+  letter-spacing:.5px;
+}
+.app-bar__brand h1{font-family:var(--font-head); font-size:19px; font-weight:600; margin:0; letter-spacing:.3px;}
+.app-bar__brand p{margin:0; font-size:12px; color:#B7CBEA;}
+
+/* ============ LAYOUT SHELL ============ */
+.app-shell{display:flex; align-items:flex-start; min-height:calc(100vh - 58px);}
+
+/* ============ SIDEBAR ============ */
+.sidebar{
+  width:290px; flex-shrink:0;
+  background:#fff;
+  border-right:1px solid var(--line);
+  height:calc(100vh - 58px);
+  position:sticky; top:58px;
+  overflow-y:auto;
+  transition:transform .25s ease;
+  z-index:35;
+}
+.sidebar__header{display:flex; align-items:center; justify-content:space-between; padding:16px 16px 8px;}
+.sidebar__header h2{font-size:15px; margin:0; font-family:var(--font-head); letter-spacing:.3px; text-transform:uppercase; color:var(--blue-700);}
+.sidebar__search{padding:0 16px 10px;}
+.sidebar__search input{width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:13px;}
+.saved-list{list-style:none; margin:0; padding:0 10px 16px;}
+.sidebar__empty{padding:0 16px; font-size:13px; color:var(--ink-soft);}
+.saved-item{border:1px solid var(--line); border-radius:7px; padding:10px 12px; margin-bottom:8px; cursor:pointer; transition:border-color .15s, background .15s;}
+.saved-item:hover{border-color:var(--blue-500); background:var(--blue-100);}
+.saved-item__top{display:flex; justify-content:space-between; align-items:center; gap:6px;}
+.saved-item__no{font-family:var(--font-mono); font-weight:600; font-size:13px; color:var(--blue-700);}
+.saved-item__date{font-size:11px; color:var(--ink-soft);}
+.saved-item__buyer{font-size:13px; margin:4px 0 6px; color:var(--ink);}
+.saved-item__actions{display:flex; gap:8px;}
+.saved-item__actions button{font-size:11px; border:none; background:none; cursor:pointer; padding:2px 0; color:var(--blue-700); font-weight:600;}
+.saved-item__actions button.del{color:var(--danger);}
+.sidebar-overlay{display:none;}
+
+/* ============ MAIN ============ */
+.main{flex:1; min-width:0; padding:20px 20px 60px;}
+
+/* ============ TOOLBAR ============ */
+.toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:18px;}
+.autosave-note{font-size:12px; color:var(--ok); margin-left:6px; transition:opacity .3s;}
+.btn{border:1px solid transparent; border-radius:7px; padding:9px 16px; font-size:13.5px; font-weight:600; cursor:pointer; transition:transform .08s ease, box-shadow .15s, background .15s, border-color .15s; display:inline-flex; align-items:center; gap:6px;}
+.btn:active{transform:translateY(1px);}
+.btn--primary{background:var(--blue-700); color:#fff;}
+.btn--primary:hover{background:var(--blue-900); box-shadow:var(--shadow);}
+.btn--outline{background:#fff; color:var(--blue-700); border-color:var(--line-strong);}
+.btn--outline:hover{border-color:var(--blue-700); background:var(--blue-100);}
+.btn--ghost{background:transparent; color:#fff; border-color:rgba(255,255,255,.4);}
+.btn--ghost:hover{background:rgba(255,255,255,.12);}
+.btn--danger{background:var(--danger-bg); color:var(--danger); border-color:#F1C7C1;}
+.btn--danger:hover{background:#F9DAD5;}
+.btn--icon{padding:8px 10px;}
+.btn--add{margin:10px 0 6px; background:#fff; border:1.5px dashed var(--line-strong); color:var(--blue-700); width:100%; justify-content:center; padding:8px;}
+.btn--add:hover{border-color:var(--blue-700); background:var(--blue-100);}
+
+/* ============ INVOICE SHEET (A4) ============ */
+.sheet-wrapper{display:flex; justify-content:center;}
+.sheet{width:210mm; min-height:297mm; background:#fff; padding:14mm 12mm; box-shadow:var(--shadow); border:1px solid var(--line);}
+
+/* Header */
+.inv-header{display:flex; gap:16px; align-items:flex-start;}
+.inv-header__logo{width:76px; height:76px; flex-shrink:0; border:1px solid var(--line); border-radius:6px; display:flex; align-items:center; justify-content:center; overflow:hidden; background:var(--steel-50);}
+.inv-header__logo img{max-width:100%; max-height:100%; object-fit:contain;}
+.inv-header__company{flex:1;}
+.inv-header__company h2{font-family:var(--font-head); font-size:26px; font-weight:700; margin:0 0 2px; color:var(--blue-900); letter-spacing:.4px; text-transform:uppercase;}
+.inv-header__company p{margin:0 0 4px; font-size:12.5px; color:var(--ink-soft);}
+.inv-header__meta{display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color:var(--ink-soft);}
+.inv-header__meta b{color:var(--ink); font-weight:600;}
+.inv-header__title{align-self:flex-start; border:1.5px solid var(--blue-700); color:var(--blue-700); font-family:var(--font-head); font-weight:700; letter-spacing:2px; font-size:14px; padding:0; border-radius:4px; white-space:nowrap; overflow:hidden;}
+.invoice-type-select{border:0; outline:0; background:#fff; color:var(--blue-700); font-family:var(--font-head); font-weight:700; letter-spacing:2px; font-size:14px; padding:6px 12px; cursor:pointer; appearance:auto;}
+.rule{border:none; border-top:2px solid var(--blue-700); margin:12px 0 14px;}
+
+/* Meta grid — two boxes side by side; fields inside stack vertically (label above value) */
+.inv-meta-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;}
+.inv-meta-box{border:1px solid var(--line); border-radius:7px; padding:10px 12px;}
+.inv-meta-box--invoice{order:2;}
+.inv-meta-box--buyer{order:1;}
+.inv-meta-box h3{margin:0 0 8px; font-size:11.5px; text-transform:uppercase; letter-spacing:.6px; color:var(--blue-700); font-weight:700;}
+.field-row{display:flex; flex-direction:column; gap:3px; margin-bottom:8px;}
+.field-row:last-child{margin-bottom:0;}
+.field-row label{font-size:10.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-soft); font-weight:600;}
+.field-row input, .field-row textarea{width:100%; border:1px solid var(--line); border-radius:5px; padding:6px 8px; font-size:13px; color:var(--ink); background:#fff; resize:vertical;}
+/* Highlight buyer/company name without changing the invoice layout */
+#buyerName{font-weight:700;}
+.field-row input:focus, .field-row textarea:focus{outline:none; border-color:var(--blue-500); box-shadow:0 0 0 3px var(--blue-100);}
+.field-row input[readonly]{background:var(--steel-50); font-family:var(--font-mono); font-weight:600; color:var(--blue-700);}
+/* static (print/PDF clone) text version of a field */
+.field-static{font-size:13px; color:var(--ink); padding:5px 1px; min-height:1.4em; white-space:pre-wrap; word-break:break-word;}
+.buyer-name-highlight{font-size:14px; font-weight:700; color:inherit;}
+
+/* Items table */
+.items-table{width:100%; border-collapse:collapse; font-size:12.5px; margin-top:4px;}
+.items-table th, .items-table td{border:1px solid var(--line); padding:6px 7px; text-align:left; vertical-align:top;}
+.items-table thead th{background:var(--blue-700); color:#fff; font-size:11px; text-transform:uppercase; letter-spacing:.4px; font-weight:600;}
+.items-table td input{width:100%; border:none; padding:2px; font-size:12.5px; background:transparent; color:var(--ink);}
+.items-table td input:focus{outline:none; background:var(--blue-100); border-radius:3px;}
+.items-table td .cell-static{padding:2px; font-size:12.5px; white-space:pre-wrap; word-break:break-word;}
+.col-sl{width:6%; text-align:center; font-family:var(--font-mono);}
+.col-hsn{width:10%;}
+.col-qty{width:8%;}
+.col-unit{width:8%;}
+.col-rate{width:11%;}
+.col-amount{width:13%;}
+.col-action{width:5%; text-align:center;}
+.items-table td.col-sl, .items-table td.col-qty, .items-table td.col-rate, .items-table td.col-amount{font-family:var(--font-mono);}
+.items-table td.col-amount{font-weight:600; text-align:right;}
+
+/* HSN/SAC-wise Tax Summary table */
+.hsn-table{width:100%; border-collapse:collapse; font-size:11.5px; margin-top:12px; font-family:var(--font-mono);}
+.hsn-table th, .hsn-table td{border:1px solid var(--line); padding:5px 7px; text-align:right;}
+.hsn-table th{background:var(--blue-100); color:var(--blue-900); font-family:var(--font-ui); font-size:10.5px; text-transform:uppercase; letter-spacing:.3px; font-weight:700; text-align:center;}
+.hsn-table td:first-child, .hsn-table th.col-hsn-sl{text-align:left;}
+.hsn-table tfoot .hsn-total-row{font-weight:700; background:var(--steel-50);}
+.hsn-table tfoot td:first-child{text-align:left;}
+.eoe{text-align:right; font-size:11px; color:var(--ink-soft); margin:0 0 6px; font-style:italic;}
+.items-table td.col-rate input, .items-table td.col-qty input{text-align:right;}
+.row-del-btn{border:none; background:none; color:var(--danger); cursor:pointer; font-size:14px; line-height:1;}
+.row-del-btn:hover{opacity:.7;}
+
+/* Totals */
+.totals-grid{display:grid; grid-template-columns:1.4fr 1fr; gap:16px; margin-top:16px;}
+.totals-words h4, .declaration h4{margin:0 0 4px; font-size:11.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--blue-700); font-weight:700;}
+.totals-words p#amountInWords{font-family:var(--font-mono); font-size:13px; font-weight:600; margin:0 0 14px; border:1px dashed var(--line-strong); padding:8px 10px; border-radius:6px; background:var(--steel-50); line-height:1.5; word-wrap:break-word;}
+.declaration p{font-size:11.5px; color:var(--ink-soft); margin:0; line-height:1.5;}
+.totals-box{border:1px solid var(--line); border-radius:7px; overflow:hidden; align-self:start;}
+.totals-row{display:flex; justify-content:space-between; align-items:center; padding:8px 12px; font-size:13px; border-bottom:1px solid var(--line);}
+.totals-row:last-child{border-bottom:none;}
+.totals-row span:last-child{font-family:var(--font-mono); font-weight:600;}
+.totals-row--grand{background:var(--blue-700); color:#fff; font-weight:700; font-size:14.5px;}
+.totals-row--grand span:last-child{color:#fff;}
+.pct-input{width:48px; border:1px solid var(--line); border-radius:4px; padding:2px 4px; font-size:12px; text-align:center; margin:0 2px;}
+.totals-row .totals-label{display:inline-flex; align-items:center; white-space:nowrap;}
+/* Static "9%" text used for print/PDF — single text node, never split, never shrinks */
+.pct-static{display:none; white-space:nowrap; min-width:34px; font-weight:600; margin-left:4px;}
+
+/* Footer */
+.inv-footer{display:flex; justify-content:space-between; align-items:flex-end; margin-top:34px;}
+.inv-footer__pan{font-size:12.5px;}
+.inv-footer__sign{text-align:center; font-size:12.5px; min-width:200px;}
+.sign-space{height:46px; border-bottom:1px solid var(--ink); margin:6px 0 6px;}
+.computer-generated{text-align:center; font-size:11px; color:var(--ink-soft); margin-top:26px; border-top:1px solid var(--line); padding-top:8px;}
+
+/* ============ COMPANY MASTER / LOOKUP ============ */
+.company-search-row{margin-bottom:6px;}
+.company-search-wrap{position:relative; width:100%;}
+.company-search-wrap input{width:100%;}
+.company-suggestions{position:absolute; left:0; right:0; top:calc(100% + 2px); z-index:30; background:#fff; border:1px solid var(--line-strong); border-radius:6px; box-shadow:0 8px 18px rgba(18,32,50,.12); max-height:190px; overflow:auto; display:none;}
+.company-suggestion{padding:8px 10px; cursor:pointer; border-bottom:1px solid var(--line); font-size:12px; line-height:1.35;}
+.company-suggestion:last-child{border-bottom:none;}
+.company-suggestion:hover{background:var(--blue-100);}
+.company-suggestion strong{display:block; color:var(--blue-900);}
+.company-suggestion span{display:block; color:var(--ink-soft); font-family:var(--font-mono); font-size:10.5px; margin-top:2px;}
+.company-master-actions{display:flex; align-items:center; gap:8px; margin-top:4px;}
+.btn--small{padding:5px 9px; font-size:11px;}
+.company-lookup-status{font-size:10.5px; color:var(--ink-soft);}
+@media print{.company-search-row,.company-master-actions,.invoice-type-select{display:none !important;}#invoiceTypePrint{display:inline !important;}}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 1000px){
+  .sidebar{position:fixed; top:0; left:0; height:100vh; transform:translateX(-100%); z-index:60; box-shadow:4px 0 20px rgba(0,0,0,.15);}
+  .sidebar.open{transform:translateX(0);}
+  .sidebar-overlay.open{display:block; position:fixed; inset:0; background:rgba(18,32,50,.4); z-index:50;}
+}
+@media (max-width: 900px){
+  .sheet{width:100%; min-height:auto; padding:16px;}
+  .totals-grid{grid-template-columns:1fr;}
+  .app-bar__brand p{display:none;}
+  .toolbar{gap:8px;}
+  .btn{padding:8px 12px; font-size:12.5px;}
+}
+@media (max-width:650px){
+  .inv-meta-grid{grid-template-columns:1fr;}
+  .inv-header{flex-direction:column;}
+  .items-table{font-size:11px;}
+}
+
+/* ============ PRINT (also used for the PDF-export clone) ============ */
+@media print{
+  .no-print{display:none !important;}
+  body{background:#fff;}
+  .app-shell{display:block;}
+  .main{padding:0;}
+  .sheet-wrapper{display:block;}
+  .sheet{width:100%; min-height:auto; box-shadow:none; border:none; padding:4mm 8mm;}
+  /* keep the two info boxes side-by-side and keep fields compact/vertical on paper */
+  .inv-meta-grid{grid-template-columns:1fr 1fr !important; margin-bottom:8px;}
+  .totals-grid{grid-template-columns:1.4fr 1fr !important; margin-top:8px;}
+  .field-row input, .field-row textarea{border:none; padding:1px 0;}
+  .field-row{margin-bottom:4px;}
+  .items-table td input{border:none;}
+  .pct-static{display:inline-block !important;}
+  .rule{margin:6px 0 8px;}
+  .hsn-table{margin-top:6px;}
+  .inv-footer{margin-top:16px;}
+  .computer-generated{margin-top:12px; padding-top:4px;}
+  /* never split these blocks across a page boundary */
+  .inv-header, .inv-meta-grid, .hsn-table, .totals-grid, .inv-footer{page-break-inside:avoid; break-inside:avoid;}
+  @page{ size:A4 portrait; margin:8mm; }
+}
+
+
+/* Used only on the hidden clone that html2canvas captures for PDF export */
+.pdf-export-clone{
+  position:fixed; left:-10000px; top:0; width:210mm; background:#fff;
+}
+.pdf-export-clone .inv-meta-grid{grid-template-columns:1fr 1fr !important; margin-bottom:8px;}
+.pdf-export-clone .totals-grid{grid-template-columns:1.4fr 1fr !important; margin-top:8px;}
+.pdf-export-clone .no-print{display:none !important;}
+.pdf-export-clone .pct-static{display:inline-block !important;}
+.pdf-export-clone .sheet{padding:4mm 8mm;}
+.pdf-export-clone .field-row{margin-bottom:4px;}
+.pdf-export-clone .rule{margin:6px 0 8px;}
+.pdf-export-clone .hsn-table{margin-top:6px;}
+.pdf-export-clone .inv-footer{margin-top:16px;}
+.pdf-export-clone .computer-generated{margin-top:12px; padding-top:4px;}
+
+
+/* PIN gate: local-only lock screen, works without network access. */
+#pinGate{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#0d2442,#1e4b8c 58%,#dce7f5);font-family:system-ui,-apple-system,sans-serif}
+#pinGate .pin-card{width:min(100%,390px);background:#fff;border:1px solid #d7dee7;border-radius:18px;padding:28px;box-shadow:0 24px 70px #06152b55;text-align:center}
+#pinGate .pin-mark{width:54px;height:54px;border-radius:14px;background:#e7eef7;color:#1e4b8c;display:grid;place-items:center;font-weight:800;font-size:20px;margin:0 auto 14px}
+#pinGate h2{margin:0 0 8px;color:#172b49;font-size:24px}#pinGate p{color:#5b677a;font-size:14px;line-height:1.5}
+#pinGate input{width:100%;padding:13px 12px;border:1px solid #b7c3d6;border-radius:9px;font-size:22px;text-align:center;letter-spacing:9px;margin:10px 0;box-sizing:border-box}
+#pinGate button{width:100%;padding:12px;border:0;border-radius:9px;background:#1e4b8c;color:#fff;font-weight:700;font-size:15px;cursor:pointer;margin-top:8px}
+#pinGate .pin-secondary{background:#eef2f8;color:#1e4b8c}#pinGate .pin-error{color:#b42318;min-height:20px;font-size:13px}
+#pinGate .recovery-box{padding:12px;background:#fff8df;border:1px solid #f0d778;border-radius:8px;font-weight:800;letter-spacing:2px;word-break:break-all;color:#4a3900}
+@media print{#pinGate{display:none!important}}
+</style>
+
+</head>
+<body>
+<div id="pinGate" role="dialog" aria-modal="true" aria-label="Invoice Generator PIN lock">
+  <div class="pin-card"><div class="pin-mark">IN</div><h2 id="pinTitle">Invoice Generator</h2><p id="pinMessage">Enter your 4-digit PIN to continue.</p>
+    <div id="pinFields"></div><div class="pin-error" id="pinError" aria-live="polite"></div>
+    <button type="button" id="pinPrimary">Unlock</button><button type="button" id="pinReset" class="pin-secondary">Reset PIN</button>
+  </div>
+</div>
+
+<!-- ============ TOP APP BAR ============ -->
+<header class="app-bar no-print">
+  <div class="app-bar__brand">
+    <span class="app-bar__mark">IN</span>
+    <div>
+      <h1>Invoice Generator</h1>
+      <p>Aluminium Fabrication &amp; Glazing Works</p>
+    </div>
+  </div>
+  <button id="sidebarToggle" class="btn btn--ghost btn--icon" title="Saved Invoices">☰ Saved Invoices</button>
+</header>
+
+<div class="app-shell">
+
+  <!-- ============ SIDEBAR: SAVED INVOICES ============ -->
+  <aside id="sidebar" class="sidebar no-print">
+    <div class="sidebar__header">
+      <h2>Saved Invoices</h2>
+      <button id="closeSidebar" class="btn btn--icon btn--ghost">✕</button>
+    </div>
+    <div class="sidebar__search">
+      <input type="text" id="searchSaved" placeholder="Search by invoice no. or buyer...">
+      <select id="savedTypeFilter" aria-label="Filter saved documents" style="width:100%;margin-top:8px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px">
+        <option value="ALL">All documents</option>
+        <option value="TAX INVOICE">Tax Invoices</option>
+        <option value="SERVICE TAX INVOICE">Service Invoices</option>
+        <option value="PROFORMA INVOICE">Proforma Invoices</option>
+      </select>
+    </div>
+    <ul id="savedList" class="saved-list"></ul>
+    <p id="savedEmpty" class="sidebar__empty">No saved invoices yet.</p>
+  </aside>
+
+  <div id="sidebarOverlay" class="sidebar-overlay no-print"></div>
+
+  <!-- ============ MAIN CONTENT ============ -->
+  <main class="main">
+
+    <!-- Toolbar -->
+    <div class="toolbar no-print">
+      <button id="btnCalculate" class="btn btn--primary">🧮 Calculate</button>
+      <button id="btnPrint" class="btn btn--outline">🖨️ Print Invoice</button>
+      <button id="btnPdf" class="btn btn--outline">⬇️ Download PDF</button>
+      <button id="btnSave" class="btn btn--outline">💾 Save Invoice</button>
+      <button id="btnCreateProforma" class="btn btn--outline">＋ Create Proforma Invoice</button>
+      <button id="btnExportJson" class="btn btn--outline">⤓ Save JSON to Folder</button>
+      <button id="btnChooseJsonFolder" class="btn btn--outline">📁 Set Save Folder</button>
+      <button id="btnImportJson" class="btn btn--outline">⤒ Load JSON</button>
+      <input type="file" id="fileImportJson" accept="application/json" hidden>
+      <button id="btnClear" class="btn btn--danger">🗑️ Clear Invoice</button>
+      <span id="autosaveNote" class="autosave-note"></span>
+    </div>
+
+    <!-- ============ INVOICE SHEET (A4) ============ -->
+    <div class="sheet-wrapper">
+      <div id="invoiceSheet" class="sheet">
+
+        <!-- Company Header -->
+        <div class="inv-header">
+          <div class="inv-header__logo">
+            <img id="companyLogo" src="" alt="Company Logo" onerror="this.style.display='none'">
+          </div>
+          <div class="inv-header__company">
+            <h2 id="companyName">COMPANY NAME</h2>
+            <p id="companyAddress">Address line</p>
+            <p class="inv-header__meta">
+              <span>GSTIN: <b id="companyGstin">-</b></span>
+              <span>PAN: <b id="companyPan">-</b></span>
+            </p>
+            <p class="inv-header__meta">
+              <span>Mobile: <b id="companyMobile">-</b></span>
+              <span>Email: <b id="companyEmail">-</b></span>
+              <span id="companyWebsiteWrap">Web: <b id="companyWebsite">-</b></span>
+            </p>
+          </div>
+          <div class="inv-header__title">
+            <select id="invoiceType" class="invoice-type-select" aria-label="Invoice Type">
+              <option value="TAX INVOICE">TAX INVOICE</option>
+              <option value="SERVICE TAX INVOICE">SERVICE TAX INVOICE</option>
+            </select>
+            <span id="invoiceTypePrint" style="display:none">TAX INVOICE</span>
+          </div>
+        </div>
+
+        <hr class="rule">
+
+        <!-- Invoice Meta + Buyer -->
+        <div class="inv-meta-grid">
+          <div class="inv-meta-box inv-meta-box--invoice">
+            <h3>Invoice Details</h3>
+            <div class="field-row">
+              <label>Invoice No.</label>
+              <input type="text" id="invoiceNo">
+            </div>
+            <div class="field-row">
+              <label>Invoice Date</label>
+              <input type="date" id="invoiceDate">
+            </div>
+            <div class="field-row">
+              <label>Other Reference</label>
+              <input type="text" id="otherReference" placeholder="P.O. number / other reference">
+            </div>
+            <div class="field-row">
+              <label>Destination</label>
+              <input type="text" id="destination" placeholder="Delivery destination">
+            </div>
+            <div class="field-row">
+              <label>Transport / Vehicle No.</label>
+              <input type="text" id="transportNo" placeholder="Transporter name / Vehicle no.">
+            </div>
+          </div>
+          <div class="inv-meta-box inv-meta-box--buyer">
+            <h3>Billed To (Buyer)</h3>
+            <div class="field-row company-search-row no-print">
+              <label>Company Search</label>
+              <div class="company-search-wrap">
+                <input type="text" id="companySearch" placeholder="Type company name or GSTIN..." autocomplete="off">
+                <div id="companySuggestions" class="company-suggestions"></div>
+              </div>
+            </div>
+            <div class="field-row">
+              <label>Name</label>
+              <input type="text" id="buyerName" placeholder="Buyer / Company name">
+            </div>
+            <div class="field-row">
+              <label>Address</label>
+              <textarea id="buyerAddress" rows="2" placeholder="Buyer address"></textarea>
+            </div>
+            <div class="field-row">
+              <label>GSTIN</label>
+              <input type="text" id="buyerGstin" placeholder="Optional">
+            </div>
+            <div class="company-master-actions no-print">
+              <button type="button" id="btnSaveCompany" class="btn btn--outline btn--small">＋ Save Company</button>
+              <span id="companyLookupStatus" class="company-lookup-status"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Items Table -->
+        <table class="items-table" id="itemsTable">
+          <thead>
+            <tr>
+              <th class="col-sl">Sl.No.</th>
+              <th class="col-desc">Description of Goods</th>
+              <th class="col-hsn">HSN Code</th>
+              <th class="col-qty">Qty</th>
+              <th class="col-unit">Unit</th>
+              <th class="col-rate">Rate (₹)</th>
+              <th class="col-amount">Amount (₹)</th>
+              <th class="col-action no-print">Del</th>
+            </tr>
+          </thead>
+          <tbody id="itemsBody"></tbody>
+        </table>
+
+        <button id="btnAddRow" class="btn btn--add no-print">+ Add Item Row</button>
+
+        <!-- HSN/SAC-wise Tax Summary -->
+        <table class="hsn-table" id="hsnTable">
+          <thead>
+            <tr>
+              <th rowspan="2" class="col-hsn-sl">HSN/SAC</th>
+              <th rowspan="2" class="col-hsn-taxable">Taxable Value</th>
+              <th colspan="2">CGST</th>
+              <th colspan="2">SGST/UTGST</th>
+              <th rowspan="2" class="col-hsn-total">Total Tax Amount</th>
+            </tr>
+            <tr>
+              <th class="col-hsn-rate">Rate</th>
+              <th class="col-hsn-amt">Amount</th>
+              <th class="col-hsn-rate">Rate</th>
+              <th class="col-hsn-amt">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="hsnBody"></tbody>
+          <tfoot>
+            <tr class="hsn-total-row">
+              <td>Total</td>
+              <td id="hsnTotalTaxable">0.00</td>
+              <td></td>
+              <td id="hsnTotalCgst">0.00</td>
+              <td></td>
+              <td id="hsnTotalSgst">0.00</td>
+              <td id="hsnTotalTax">0.00</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- Totals -->
+        <div class="totals-grid">
+          <div class="totals-words">
+            <p class="eoe">E. &amp; O.E</p>
+            <h4>Amount Chargeable (in words)</h4>
+            <p id="amountInWords">Indian Rupees Zero Only</p>
+            <h4>Tax Amount (in words)</h4>
+            <p id="taxAmountInWords">Indian Rupees Zero Only</p>
+            <div class="declaration">
+              <h4>Declaration</h4>
+              <p>We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.</p>
+            </div>
+          </div>
+          <div class="totals-box">
+            <div class="totals-row">
+              <span>Subtotal</span>
+              <span id="subtotalVal">₹ 0.00</span>
+            </div>
+            <div class="totals-row">
+              <span class="totals-label">CGST <input type="number" id="cgstPct" value="9" min="0" step="0.01" class="pct-input no-print"><span class="no-print">&nbsp;%</span><span id="cgstPctStatic" class="pct-static">9%</span></span>
+              <span id="cgstVal">₹ 0.00</span>
+            </div>
+            <div class="totals-row">
+              <span class="totals-label">SGST <input type="number" id="sgstPct" value="9" min="0" step="0.01" class="pct-input no-print"><span class="no-print">&nbsp;%</span><span id="sgstPctStatic" class="pct-static">9%</span></span>
+              <span id="sgstVal">₹ 0.00</span>
+            </div>
+            <div class="totals-row">
+              <span>Round Off</span>
+              <span id="roundOffVal">₹ 0.00</span>
+            </div>
+            <div class="totals-row totals-row--grand">
+              <span>Grand Total</span>
+              <span id="grandTotalVal">₹ 0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="inv-footer">
+          <div class="inv-footer__pan"><p>Company's PAN: <b id="footerPan">-</b></p></div>
+          <div class="inv-footer__sign">
+            <p>For <b id="footerCompanyName">Company Name</b></p>
+            <div class="sign-space"></div>
+            <p>Authorised Signatory</p>
+          </div>
+        </div>
+
+        <p class="computer-generated">This is a computer-generated invoice and does not require a physical signature.</p>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- PDF libraries (client-side, no backend) -->
+<section id="proformaView" style="display:none;max-width:1050px;margin:20px auto;padding:24px;background:#fff;border:1px solid #d9e1ea;border-radius:12px;box-shadow:0 8px 28px rgba(20,40,70,.08)">
+  <div class="pf-company-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #17365d">
+    <div><div style="font-size:12px;letter-spacing:2px;color:#58708d;font-weight:700">BHAVANI ENTERPRISES</div><div style="font-size:13px;color:#334155;margin-top:4px">Aluminium Fabrication | UPVC Window Plant (Unit-2)</div></div>
+    <div id="pfCompanyContact" style="text-align:right;font-size:12px;color:#334155;line-height:1.6;max-width:55%"><div id="pfCompanyAddress">Company address</div><div><span id="pfCompanyMobile">Mobile</span> · <span id="pfCompanyEmail">Email</span></div></div>
+    <button type="button" id="btnCloseProforma" class="btn btn--outline no-print">← Back to Tax Invoice</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;align-items:stretch;margin-bottom:18px">
+    <div style="display:flex;align-items:center;justify-content:center;background:#edf3fa;border-radius:6px;padding:16px;text-align:center"><div><h1 style="margin:0;color:#17365d;font-size:clamp(23px,3vw,32px);letter-spacing:.4px">PROFORMA INVOICE</h1><div style="color:#66758a;font-size:12px;margin-top:6px">Preliminary document · Not a tax invoice</div></div></div>
+    <div style="border:1px solid #cbd5e1;border-radius:6px;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;align-content:center"><strong>Proforma Invoice No.</strong><span id="pfNoPreview">—</span><strong>Issue Date</strong><span id="pfDatePreview">—</span><strong>Valid Until</strong><span id="pfValidPreview">—</span><strong>Quotation Reference</strong><span id="pfQuoteRefPreview">—</span></div>
+  </div>
+  <div class="no-print" style="margin:0 0 14px;position:relative">
+    <label for="pfCompanySearch" style="display:block;margin-bottom:5px">Search Company / GSTIN</label>
+    <input id="pfCompanySearch" autocomplete="off" placeholder="Type company name or GSTIN..." style="display:block;width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px">
+    <div id="pfCompanySuggestions" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:40;background:#fff;border:1px solid #cbd5e1;border-radius:6px;box-shadow:0 8px 18px rgba(18,32,50,.12);max-height:190px;overflow:auto"></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px"><button type="button" id="btnPfSaveCompany" class="btn btn--outline btn--small">＋ Save Current Customer as Company</button><span id="pfCompanyStatus" style="font-size:11px;color:#58708d"></span></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px">
+    <label>Proforma No.<input id="pfNo" style="display:block;width:100%;padding:10px;margin-top:5px;border:1px solid #cbd5e1;border-radius:6px"></label>
+    <label>Issue Date<input id="pfDate" type="date" style="display:block;width:100%;padding:10px;margin-top:5px;border:1px solid #cbd5e1;border-radius:6px"></label>
+    <label>Valid Until<input id="pfValidUntil" type="date" style="display:block;width:100%;padding:10px;margin-top:5px;border:1px solid #cbd5e1;border-radius:6px"></label>
+    <label>Quotation Reference<input id="pfQuoteRef" placeholder="Optional" style="display:block;width:100%;padding:10px;margin-top:5px;border:1px solid #cbd5e1;border-radius:6px"></label>
+    <label>Customer / Company<input id="pfBuyer" style="display:block;width:100%;padding:10px;margin-top:5px;border:1px solid #cbd5e1;border-radius:6px"></label>
+    <label>GSTIN<input id="pfGstin" style="display:block;width:100%;padding:10px;margin-top:5px;border:1px solid #cbd5e1;border-radius:6px"></label>
+    <label>Project Name<input id="pfProject" placeholder="Optional" style="display:block;width:100%;padding:10px;margin-top:5px;border:1px solid #cbd5e1;border-radius:6px"></label>
+    <label>Place of Supply<input id="pfSupply" placeholder="e.g. Karnataka (29)" style="display:block;width:100%;padding:10px;margin-top:5px;border:1px solid #cbd5e1;border-radius:6px"></label>
+    <label style="grid-column:1/-1">Billing Address<textarea id="pfAddress" rows="2" style="display:block;width:100%;padding:10px;margin-top:5px;border:1px solid #cbd5e1;border-radius:6px"></textarea></label>
+  </div>
+  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:650px"><thead><tr style="background:#17365d;color:white"><th style="padding:10px;text-align:left">Description</th><th style="padding:10px">HSN</th><th style="padding:10px">Qty</th><th style="padding:10px">Rate (₹)</th><th style="padding:10px;text-align:right">Amount (₹)</th><th class="no-print"></th></tr></thead><tbody id="pfItems"></tbody></table></div>
+  <button type="button" id="btnPfAddRow" class="btn btn--outline" style="margin-top:12px">＋ Add Item</button>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;align-items:start;margin-top:20px"><div id="pfAmountWords" style="padding:14px;background:#edf3fa;border-radius:6px;color:#17365d"><strong style="display:block;margin-bottom:6px">Amount in Words</strong><span id="pfAmountWordsText">Indian Rupees Zero Only.</span></div><div style="display:flex;justify-content:flex-end"><div style="width:100%;max-width:360px;border-top:2px solid #17365d;padding-top:12px">
+    <div style="display:flex;justify-content:space-between;padding:6px 0"><span>Subtotal</span><strong id="pfSubtotal">₹0.00</strong></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0"><label for="pfGst">GST %</label><input id="pfGst" type="number" min="0" max="100" value="18" style="width:80px;padding:6px;border:1px solid #cbd5e1;border-radius:5px"></div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0"><span>GST Amount</span><strong id="pfTax">₹0.00</strong></div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0"><span>Round Off</span><strong id="pfRound">₹0.00</strong></div>
+    <div style="display:flex;justify-content:space-between;padding:12px;background:#edf3fa;color:#17365d;font-size:18px;margin-top:8px"><strong>Grand Total</strong><strong id="pfGrand">₹0.00</strong></div>
+  </div></div></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:18px"><label>Advance Payment (₹)<input id="pfAdvance" type="number" min="0" value="0" style="display:block;width:100%;padding:10px;margin-top:5px;border:1px solid #cbd5e1;border-radius:6px"></label><label>Payment Terms<input id="pfTerms" placeholder="e.g. 50% advance, balance on completion" style="display:block;width:100%;padding:10px;margin-top:5px;border:1px solid #cbd5e1;border-radius:6px"></label></div>
+  <section id="pfFixedTerms" aria-label="Fixed Terms and Conditions" style="margin-top:20px;padding:16px;border:1px solid #d9e1ea;border-radius:8px;background:#f8fafc;color:#26364a">
+    <h2 style="margin:0 0 10px;font-size:15px;color:#17365d">Terms and Conditions</h2>
+    <ol style="margin:0;padding-left:22px;line-height:1.65">
+      <li>This is a preliminary estimate and not a tax invoice.</li>
+      <li>Prices are valid until the date specified above.</li>
+      <li>Advance payment and delivery terms are subject to agreement.</li>
+      <li>Final invoice will be issued as applicable upon supply of goods or completion of work.</li>
+    </ol>
+  </section>
+  <div id="pfSignatureFooter" style="display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-top:30px;padding-top:14px;border-top:1px solid #d9e1ea;color:#26364a">
+    <div style="font-size:12px;min-width:150px;flex:1">
+      <p style="margin:0 0 4px">Company's PAN: <strong id="pfFooterPan">ADD PAN IN COMPANY DETAILS</strong></p>
+    </div>
+    <div id="pfClientSignatureSeal" style="min-width:200px;flex:1;text-align:center;font-size:12px">
+      <div style="height:90px;border:1px dashed #94a3b8;border-radius:4px;margin:0 0 7px;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:11px">Signature / Seal</div>
+      <p style="margin:0;font-weight:600">Customer's Signature &amp; Seal</p>
+      <p style="margin:4px 0 0;color:#64748b;font-size:10px">Accepted by customer</p>
+    </div>
+    <div style="min-width:200px;flex:1;text-align:center;font-size:12px">
+      <p style="margin:0 0 6px">For <strong>BHAVANI ENTERPRISES</strong></p>
+      <div style="height:48px;border-bottom:1px solid #64748b;margin:0 10px 6px"></div>
+      <p style="margin:0">Authorised Signatory</p>
+    </div>
+  </div>
+  <p id="pfComputerGenerated" style="margin:14px 0 0;text-align:center;font-size:11px;color:#64748b">This is a computer-generated proforma invoice and does not require a physical signature.</p>
+  <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:22px;padding:14px;background:#f8fafc;border:1px solid #d9e1ea;border-radius:8px">
+    <button id="btnPfDownloadPdf" class="btn btn--outline" type="button">⬇️ Download / Save PDF</button>
+    <button id="btnPfSave" class="btn btn--primary" type="button">💾 Save Proforma</button>
+    <button id="btnPfExportJson" class="btn btn--outline" type="button">↓ Save JSON to Folder</button>
+    <button id="btnPfChooseJsonFolder" class="btn btn--outline" type="button">📁 Set Save Folder</button>
+    <button id="btnPfImportJson" class="btn btn--outline" type="button">↑ Load Proforma JSON</button>
+    <button id="btnPfClear" class="btn btn--danger" type="button">🗑️ Clear Proforma</button>
+    <input type="file" id="pfFileImportJson" accept="application/json" hidden>
+  </div>
+  <section class="no-print" style="margin-top:22px;padding:16px;border:1px solid #d9e1ea;border-radius:8px;background:#fff">
+    <h2 style="margin:0 0 12px;color:#17365d;font-size:17px">Saved Proforma Invoices</h2>
+    <input id="pfSavedSearch" placeholder="Search proforma no. or customer..." style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;margin-bottom:10px">
+    <ul id="pfSavedList" style="list-style:none;padding:0;margin:0;display:grid;gap:8px"></ul>
+    <p id="pfSavedEmpty" style="color:#64748b;margin:8px 0">No saved proforma invoices yet. Click “Save Proforma” to add one here.</p>
+  </section>
+</section>
+<style>
+/* Proforma view: remove the hidden invoice workspace from document flow so the form starts directly below the app bar. */
+body.proforma-open .app-shell { display: none !important; }
+body.proforma-open #proformaView { margin: 20px auto; }
+@media (max-width: 650px) {
+  body.proforma-open #proformaView { margin: 0 auto !important; }
+}
+
+/* Proforma: responsive layout for phones and tablets */
+#proformaView, #proformaView * { box-sizing: border-box; }
+#proformaView { width: calc(100% - 32px); }
+#proformaView input, #proformaView textarea { max-width: 100%; min-width: 0; font: inherit; }
+#proformaView table { font-size: 13px; }
+#proformaView .pf-items-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+@media (max-width: 650px) {
+  #proformaView { width: 100%; margin: 0 !important; padding: 14px !important; border-radius: 0 !important; box-shadow: none !important; }
+  #proformaView > div:first-child { align-items: flex-start !important; gap: 12px !important; margin-bottom: 16px !important; }
+  #proformaView h1 { font-size: 24px !important; line-height: 1.2; }
+  #proformaView > div:first-child .btn { width: 100%; justify-content: center; }
+  #proformaView > div:nth-child(2), #proformaView > div:nth-last-of-type(2) { grid-template-columns: minmax(0, 1fr) !important; gap: 10px !important; }
+  #proformaView label { min-width: 0; }
+  #proformaView label[style*="grid-column"] { grid-column: auto !important; }
+  #proformaView #pfItems { font-size: 12px; }
+  #proformaView #pfItems input { max-width: 100%; }
+  #proformaView > div:has(> table) { max-width: 100%; }
+  #proformaView > div[style*="justify-content:flex-end"] { justify-content: stretch !important; }
+  #proformaView > div[style*="justify-content:flex-end"] > div { width: 100% !important; }
+  #proformaView #pfGrand { font-size: 17px; }
+  #proformaView > div:last-child { gap: 8px !important; }
+  #proformaView > div:last-child .btn { flex: 1 1 100%; justify-content: center; }
+}
+@media print {
+  body.proforma-printing * { visibility:hidden!important; }
+  body.proforma-printing #proformaView, body.proforma-printing #proformaView * { visibility:visible!important; }
+  body.proforma-printing #proformaView { display:block!important; position:absolute; left:0; top:0; width:100%; max-width:none; margin:0; padding:12px; border:0; box-shadow:none; }
+  body.proforma-printing #proformaView .no-print { display:none!important; }
+  body.proforma-printing #proformaView input, body.proforma-printing #proformaView textarea { border:0!important; padding:2px!important; }
+  body.proforma-printing #proformaView .btn { display:none!important; }
+}
+
+/* Proforma dashboard styling: professional navy/white document treatment */
+#proformaView{border-radius:4px!important;border-color:#cbd5e1!important;box-shadow:0 5px 22px rgba(15,35,60,.08)!important;color:#172b43}
+#proformaView h1{letter-spacing:.4px}
+#proformaView label{color:#26364a;font-size:13px;font-weight:600}
+#proformaView input:not([type=checkbox]),#proformaView textarea{background:#fff;color:#172b43;font-size:13px}
+#proformaView #pfItems th{font-size:12px;letter-spacing:.15px}
+#proformaView #pfItems td{vertical-align:middle}
+#proformaView #pfFixedTerms{background:#f0f5fb!important;border-color:#d4e0ee!important}
+#proformaView #pfSignatureFooter{border-top:1px solid #17365d!important}
+#proformaView #pfClientSignatureSeal{break-inside:avoid;page-break-inside:avoid}
+@media(max-width:640px){#proformaView #pfSignatureFooter>div{min-width:100%!important;flex-basis:100%!important}#proformaView #pfClientSignatureSeal{max-width:320px;margin:8px auto}}
+#proformaView #pfComputerGenerated{border-top:1px solid #17365d;padding-top:8px;color:#334155!important}
+#proformaView .pf-company-header{color:#17365d}
+@media print{#proformaView{font-size:11px!important}#proformaView .pf-company-header{padding-bottom:8px!important;margin-bottom:10px!important}#proformaView #pfAmountWords{break-inside:avoid;page-break-inside:avoid}}
+#proformaView #pfGrand{font-weight:800}
+@media print{
+  @page{size:A4 portrait;margin:8mm}
+  body.proforma-printing #proformaView{font-size:11px!important;padding:4mm!important;width:100%!important;background:#fff!important}
+  body.proforma-printing #proformaView input,body.proforma-printing #proformaView textarea{font-size:11px!important;color:#111!important;background:transparent!important;resize:none!important}
+  body.proforma-printing #proformaView label{font-size:10px!important}
+  body.proforma-printing #proformaView #pfFixedTerms{background:#f0f5fb!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  body.proforma-printing #proformaView #pfGrand{font-size:16px!important}
+  body.proforma-printing #proformaView #pfSignatureFooter,body.proforma-printing #proformaView #pfFixedTerms,body.proforma-printing #proformaView table,body.proforma-printing #proformaView > div:first-child{break-inside:avoid;page-break-inside:avoid}
+}
+
+</style>
+
+<!-- No CDN dependencies: core app, storage and browser printing work offline. -->
+
+<script>
+'use strict';
+
+/* ---------------------------------------------------------------------
+   1. COMPANY DETAILS (fixed — edit these values directly in code)
+   --------------------------------------------------------------------- */
+const COMPANY_DETAILS = {
+  name: "BHAVANI ENTERPRISES",
+      address: "No.281/1,60ft Road,Gidadakonenhalli,8th Block,M.Vishveshwaraya Layout,Muddinapalaya,Bengaluru-560091",
+      gstin: "29AALPU3738N2ZP",
+      pan: "AALPU3738N",
+      mobile: "+91 8884441222",
+      email: "bhavani.e.shankru@gmail.com",
+      logo: "" // e.g. "logo.png" placed alongside this file — set the filename here
+};
+
+// Prefix used in generated invoice numbers, e.g. "BEU" -> BEU-0001-2026/27
+const INVOICE_PREFIX = "BEU";
+
+const LS_KEYS = {
+  invoices: 'invGen_savedInvoices',
+  draft: 'invGen_draft',
+  counterPrefix: 'invGen_invoiceCounter_',
+  companies: 'bhavani_company_master' // shared with quotation generator
+};
+
+let rowIdSeq = 1;
+
+const API_BASE = (window.location.port === '5500' || window.location.origin.includes(':5500'))
+  ? 'http://localhost:3000'
+  : '';
+let pinMode = 'login';
+let setupSecretRequired = false;
+
+function pinEl(id){ return document.getElementById(id); }
+
+function showPinScreen(mode, isSecretReq){
+  pinMode = mode;
+  if(isSecretReq !== undefined) setupSecretRequired = Boolean(isSecretReq);
+  const fields = pinEl('pinFields'), title = pinEl('pinTitle'), msg = pinEl('pinMessage'), primary = pinEl('pinPrimary'), reset = pinEl('pinReset'), err = pinEl('pinError');
+  err.textContent = '';
+  fields.innerHTML = '';
+  reset.style.display = 'inline-block';
+
+  if(mode === 'setup'){
+    title.textContent = 'Set Administrator PIN';
+    msg.textContent = setupSecretRequired
+      ? 'Set your 4-digit PIN. An Administrator Setup Secret is required to authorize setup.'
+      : 'Set your 4-digit Administrator PIN. This will be the single authoritative PIN used across all browsers and devices.';
+
+    const urlSecret = new URLSearchParams(window.location.search).get('secret') ||
+      new URLSearchParams(window.location.search).get('setup_secret') ||
+      new URLSearchParams(window.location.search).get('setupSecret') || '';
+
+    let secretField = '';
+    if(setupSecretRequired || urlSecret){
+      secretField = '<div style="margin-top:10px;text-align:left">' +
+        '<label for="setupSecretInput" style="display:block;font-size:12px;font-weight:600;color:#54617A;margin-bottom:3px">Administrator Setup Secret</label>' +
+        '<input id="setupSecretInput" type="password" autocomplete="off" placeholder="Enter ADMIN_SETUP_SECRET" aria-label="Administrator Setup Secret" style="letter-spacing:normal;font-size:14px;padding:10px 12px;margin:0;text-align:left">' +
+        '</div>';
+    }
+
+    fields.innerHTML = '<input id="pinInput" type="password" inputmode="numeric" autocomplete="new-password" maxlength="4" pattern="[0-9]{4}" placeholder="New 4-digit PIN" aria-label="Create four digit PIN">' +
+      '<input id="pinConfirm" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="Confirm 4-digit PIN" aria-label="Confirm four digit PIN">' +
+      secretField;
+
+    if(urlSecret && pinEl('setupSecretInput')){
+      pinEl('setupSecretInput').value = urlSecret;
+    }
+
+    primary.textContent = 'Set PIN';
+    reset.style.display = 'none';
+  } else if(mode === 'email-reset'){
+    title.textContent = 'Reset PIN by email';
+    msg.textContent = 'A secure reset link will be sent to the administrator email: nakshashreyas@gmail.com';
+    fields.innerHTML = '<p style="margin:8px 0;color:#54617A;font-size:14px;line-height:1.5">You need an internet connection for this step. Your invoices stay safe on this device.</p>';
+    primary.textContent = 'Send reset link';
+    reset.textContent = 'Back to login';
+  } else {
+    title.textContent = 'Invoice Generator';
+    msg.textContent = 'Enter your 4-digit PIN to continue.';
+    fields.innerHTML = '<input id="pinInput" type="password" inputmode="numeric" autocomplete="current-password" maxlength="4" pattern="[0-9]{4}" placeholder="••••" aria-label="Four digit PIN">';
+    primary.textContent = 'Unlock';
+    reset.textContent = 'Reset PIN by email';
+  }
+  const input = fields.querySelector('input');
+  if(input) setTimeout(() => input.focus(), 50);
+}
+
+async function handlePinPrimary(){
+  const err = pinEl('pinError'), pin = pinEl('pinInput')?.value || '';
+  err.textContent = '';
+
+  if(pinMode === 'email-reset'){
+    const primary = pinEl('pinPrimary');
+    primary.disabled = true;
+    primary.textContent = 'Sending…';
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/request-reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const data = await response.json().catch(() => ({}));
+      if(!response.ok) throw new Error(data.error || 'Unable to send the reset email.');
+      err.style.color = '#1E7B4D';
+      err.textContent = 'Reset link email accepted by Resend for nakshashreyas@gmail.com. Check your inbox and spam folder.';
+    } catch(e) {
+      err.style.color = '#b42318';
+      let msg = e.message || 'Unable to send the reset email.';
+      if(!navigator.onLine){
+        msg = 'No internet connection. Please check your network connection and try again.';
+      } else if(e instanceof TypeError){
+        msg = 'Could not contact the authentication service. Ensure the server is running.';
+      }
+      err.textContent = msg;
+    } finally {
+      primary.disabled = false;
+      primary.textContent = 'Send reset link';
+    }
+    return;
+  }
+
+  if(pinMode === 'setup'){
+    const confirm = pinEl('pinConfirm')?.value || '';
+    const setupSecret = pinEl('setupSecretInput')?.value?.trim() || '';
+    if(!/^\d{4}$/.test(pin)){ err.textContent = 'Enter exactly 4 digits.'; return; }
+    if(pin !== confirm){ err.textContent = 'PINs do not match.'; return; }
+    if(setupSecretRequired && !setupSecret){
+      err.textContent = 'Please enter the administrator setup secret.';
+      return;
+    }
+
+    const primary = pinEl('pinPrimary');
+    primary.disabled = true;
+    primary.textContent = 'Setting PIN…';
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/setup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Setup-Secret': setupSecret
+        },
+        body: JSON.stringify({ pin, setupSecret })
+      });
+      const data = await response.json().catch(() => ({}));
+      if(!response.ok) throw new Error(data.error || 'Failed to initialize PIN.');
+      sessionStorage.setItem('invGen_sessionUnlocked', '1');
+      localStorage.removeItem('invGen_pinHash_v1');
+      localStorage.removeItem('invGen_pinRecoveryHash_v1');
+      pinEl('pinGate').style.display = 'none';
+    } catch(e) {
+      err.style.color = '#b42318';
+      err.textContent = e.message || 'Setup failed.';
+    } finally {
+      primary.disabled = false;
+      primary.textContent = 'Set PIN';
+    }
+    return;
+  }
+
+  // pinMode === 'login'
+  if(!/^\d{4}$/.test(pin)){
+    err.style.color = '#b42318';
+    err.textContent = 'Enter your 4-digit PIN.';
+    return;
+  }
+
+  const primary = pinEl('pinPrimary');
+  primary.disabled = true;
+  primary.textContent = 'Verifying…';
+
+  try {
+    const response = await fetch(`${API_BASE}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin })
+    });
+    const data = await response.json().catch(() => ({}));
+    if(!response.ok){
+      throw new Error(data.error || 'Incorrect PIN. Try again.');
+    }
+    sessionStorage.setItem('invGen_sessionUnlocked', '1');
+    localStorage.removeItem('invGen_pinHash_v1');
+    localStorage.removeItem('invGen_pinRecoveryHash_v1');
+    pinEl('pinGate').style.display = 'none';
+  } catch(e) {
+    err.style.color = '#b42318';
+    let msg = e.message || 'Incorrect PIN. Try again.';
+    if(!navigator.onLine){
+      msg = 'No internet connection. Authentication requires connection to backend.';
+    } else if(e instanceof TypeError){
+      msg = 'Could not contact backend service.';
+    }
+    err.textContent = msg;
+    const pinInput = pinEl('pinInput');
+    if(pinInput){ pinInput.value = ''; pinInput.focus(); }
+  } finally {
+    primary.disabled = false;
+    primary.textContent = 'Unlock';
+  }
+}
+
+async function initPinGate(){
+  // Requirement: Every page load or refresh must display the PIN gate immediately.
+  // Never bypass the PIN screen using sessionStorage, cookies, or previous session state.
+  sessionStorage.removeItem('invGen_sessionUnlocked');
+  pinEl('pinGate').style.display = 'flex';
+
+  pinEl('pinPrimary').onclick = handlePinPrimary;
+  pinEl('pinReset').onclick = () => {
+    if(pinMode === 'email-reset'){ showPinScreen('login'); return; }
+    showPinScreen('email-reset');
+  };
+  pinEl('pinFields').addEventListener('keydown', e => {
+    if(e.key === 'Enter') handlePinPrimary();
+  });
+
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/status`);
+    const data = await res.json().catch(() => ({}));
+    if(data.ok && data.isConfigured){
+      // Always require entering the administrator PIN on page load/refresh
+      showPinScreen('login');
+    } else {
+      // First-time setup flow: show setup screen if PIN is not yet configured
+      showPinScreen('setup', data.setupSecretRequired);
+    }
+  } catch {
+    // If backend is unreachable, fail closed
+    showPinScreen('login');
+    pinEl('pinError').textContent = 'Authentication service is unreachable.';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initPinGate();
+  renderCompanyDetails();
+  bindEvents();
+  restoreDraftOrFresh();
+  renderSavedList();
+  calculateTotals();
+
+  // Shrink the invoice to fit one A4 page right before it prints, and
+  // restore the normal on-screen layout right after.
+  window.addEventListener('beforeprint', () => {
+    fitToOnePage(document.getElementById('invoiceSheet'), document.querySelector('.sheet-wrapper'));
+  });
+  window.addEventListener('afterprint', () => {
+    resetFit(document.getElementById('invoiceSheet'), document.querySelector('.sheet-wrapper'));
+  });
+});
+
+/* ---------------------------------------------------------------------
+   ONE-PAGE AUTO-FIT
+   If the invoice's natural height is only a bit taller than one A4 page
+   (a common case: a couple of items plus the tax-summary/footer just
+   spill a few mm over), shrink it down so it lands cleanly on a single
+   page instead of leaking a near-empty second page. If the content is
+   genuinely long (many item rows), shrinking would make it unreadably
+   small, so beyond MIN_SCALE we leave it at full size and let it flow
+   onto additional pages naturally.
+   --------------------------------------------------------------------- */
+const ONE_PAGE_MIN_SCALE = 0.72;
+
+function fitToOnePage(sheetEl, containerEl){
+  if (!sheetEl || !containerEl) return;
+  resetFit(sheetEl, containerEl);
+
+  const pxPerMm = 96 / 25.4;
+  const pageMarginsMm = 16; // 8mm top + 8mm bottom, matches @page margin
+  const usablePageHeightPx = (297 - pageMarginsMm) * pxPerMm;
+  const naturalHeightPx = sheetEl.scrollHeight;
+
+  if (naturalHeightPx <= usablePageHeightPx) return; // already fits — nothing to do
+
+  let scale = usablePageHeightPx / naturalHeightPx;
+  if (scale < ONE_PAGE_MIN_SCALE) return; // too much content — let it paginate naturally instead of over-shrinking
+
+  sheetEl.style.transformOrigin = 'top left';
+  sheetEl.style.transform = `scale(${scale})`;
+  sheetEl.style.width = (100 / scale) + '%'; // counteract the transform's horizontal shrink
+  containerEl.style.height = (naturalHeightPx * scale) + 'px'; // reserve only the scaled height in page flow
+}
+
+function resetFit(sheetEl, containerEl){
+  if (!sheetEl || !containerEl) return;
+  sheetEl.style.transform = 'none';
+  sheetEl.style.width = '';
+  containerEl.style.height = 'auto';
+}
+
+function renderCompanyDetails(){
+  document.getElementById('companyName').textContent = COMPANY_DETAILS.name;
+  document.getElementById('companyAddress').textContent = COMPANY_DETAILS.address;
+  document.getElementById('companyGstin').textContent = COMPANY_DETAILS.gstin;
+  document.getElementById('companyPan').textContent = COMPANY_DETAILS.pan;
+  document.getElementById('companyMobile').textContent = COMPANY_DETAILS.mobile;
+  document.getElementById('companyEmail').textContent = COMPANY_DETAILS.email;
+  document.getElementById('footerPan').textContent = COMPANY_DETAILS.pan;
+  document.getElementById('footerCompanyName').textContent = COMPANY_DETAILS.name;
+  const pfFooterPan = document.getElementById('pfFooterPan');
+  if (pfFooterPan) pfFooterPan.textContent = COMPANY_DETAILS.pan || 'ADD PAN IN COMPANY DETAILS';
+  const pfCompanyAddress = document.getElementById('pfCompanyAddress');
+  const pfCompanyMobile = document.getElementById('pfCompanyMobile');
+  const pfCompanyEmail = document.getElementById('pfCompanyEmail');
+  if (pfCompanyAddress) pfCompanyAddress.textContent = COMPANY_DETAILS.address || '';
+  if (pfCompanyMobile) pfCompanyMobile.textContent = COMPANY_DETAILS.mobile ? 'Mobile: ' + COMPANY_DETAILS.mobile : '';
+  if (pfCompanyEmail) pfCompanyEmail.textContent = COMPANY_DETAILS.email ? 'Email: ' + COMPANY_DETAILS.email : '';
+
+  const websiteWrap = document.getElementById('companyWebsiteWrap');
+  if (COMPANY_DETAILS.website) {
+    document.getElementById('companyWebsite').textContent = COMPANY_DETAILS.website;
+  } else {
+    websiteWrap.style.display = 'none';
+  }
+
+  if (COMPANY_DETAILS.logo) {
+    document.getElementById('companyLogo').src = COMPANY_DETAILS.logo;
+  } else {
+    document.getElementById('companyLogo').closest('.inv-header__logo').style.display = 'none';
+  }
+}
+
+/* ---------------------------------------------------------------------
+   COMPANY MASTER / BUYER LOOKUP
+   Stores buyer companies in localStorage so the same company can be used
+   from both the Invoice and Quotation generators on the same browser/domain.
+   --------------------------------------------------------------------- */
+function getCompanyMaster(){
+  try { return JSON.parse(localStorage.getItem(LS_KEYS.companies)) || []; }
+  catch(e){ return []; }
+}
+
+function setCompanyMaster(list){
+  localStorage.setItem(LS_KEYS.companies, JSON.stringify(list));
+}
+
+function normalizeCompanyText(value){
+  return String(value || '').trim().toLowerCase();
+}
+
+function findCompanies(search){
+  const q = normalizeCompanyText(search);
+  if (!q) return [];
+  return getCompanyMaster().filter(c =>
+    normalizeCompanyText(c.name).includes(q) ||
+    normalizeCompanyText(c.gstin).includes(q)
+  ).slice(0, 8);
+}
+
+function setCompanyLookupStatus(message, ok=false){
+  const el = document.getElementById('companyLookupStatus');
+  if (!el) return;
+  el.textContent = message || '';
+  el.style.color = ok ? '#16794b' : '';
+}
+
+function fillBuyerFromCompany(company){
+  if (!company) return;
+  document.getElementById('buyerName').value = company.name || '';
+  document.getElementById('buyerAddress').value = company.address || '';
+  document.getElementById('buyerGstin').value = company.gstin || '';
+  document.getElementById('companySearch').value = company.name || company.gstin || '';
+  hideCompanySuggestions();
+  setCompanyLookupStatus('✓ Company details filled', true);
+  autosave();
+}
+
+function hideCompanySuggestions(){
+  const box = document.getElementById('companySuggestions');
+  if (box){ box.innerHTML = ''; box.style.display = 'none'; }
+}
+
+function renderCompanySuggestions(){
+  const input = document.getElementById('companySearch');
+  const box = document.getElementById('companySuggestions');
+  if (!input || !box) return;
+
+  const results = findCompanies(input.value);
+  box.innerHTML = '';
+
+  if (!input.value.trim()) { hideCompanySuggestions(); return; }
+  if (!results.length){
+    box.innerHTML = '<div class="company-suggestion"><strong>No company found</strong><span>Save the current buyer using “＋ Save Company”</span></div>';
+    box.style.display = 'block';
+    return;
+  }
+
+  results.forEach(company => {
+    const item = document.createElement('div');
+    item.className = 'company-suggestion';
+    item.innerHTML = `<strong>${escapeHtml(company.name || 'Unnamed company')}</strong><span>${escapeHtml(company.gstin || 'No GSTIN')}</span>`;
+    item.addEventListener('mousedown', e => {
+      e.preventDefault();
+      fillBuyerFromCompany(company);
+    });
+    box.appendChild(item);
+  });
+  box.style.display = 'block';
+}
+
+function saveCurrentBuyerToCompanyMaster(){
+  const name = document.getElementById('buyerName').value.trim();
+  const address = document.getElementById('buyerAddress').value.trim();
+  const gstin = document.getElementById('buyerGstin').value.trim().toUpperCase();
+
+  if (!name && !gstin){
+    setCompanyLookupStatus('Enter a company name or GSTIN first');
+    document.getElementById('buyerName').focus();
+    return;
+  }
+
+  const companies = getCompanyMaster();
+  const existingIndex = companies.findIndex(c =>
+    (gstin && normalizeCompanyText(c.gstin) === normalizeCompanyText(gstin)) ||
+    (name && normalizeCompanyText(c.name) === normalizeCompanyText(name))
+  );
+
+  const record = { name, address, gstin, updatedAt: new Date().toISOString() };
+  if (existingIndex >= 0) companies[existingIndex] = { ...companies[existingIndex], ...record };
+  else companies.unshift(record);
+  setCompanyMaster(companies);
+
+  document.getElementById('companySearch').value = name || gstin;
+  hideCompanySuggestions();
+  setCompanyLookupStatus(existingIndex >= 0 ? '✓ Company updated' : '✓ Company saved', true);
+  autosave();
+}
+
+function escapeHtml(value){
+  return String(value).replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+}
+
+function bindEvents(){
+  document.getElementById('btnAddRow').addEventListener('click', () => { addRow(); autosave(); });
+  document.getElementById('btnCalculate').addEventListener('click', () => { calculateTotals(); flashAutosave('Calculated ✓'); });
+  document.getElementById('btnPrint').addEventListener('click', () => { calculateTotals(); window.print(); });
+  document.getElementById('btnPdf').addEventListener('click', downloadPdf);
+  document.getElementById('btnSave').addEventListener('click', saveCurrentInvoice);
+  document.getElementById('btnCreateProforma').addEventListener('click', () => openProforma());
+  document.getElementById('btnCloseProforma').addEventListener('click', closeProforma);
+  document.getElementById('btnPfAddRow').addEventListener('click', () => { addProformaRow(); calculateProforma(); });
+  document.getElementById('btnPfSave').addEventListener('click', saveProforma);
+  document.getElementById('btnPfDownloadPdf').addEventListener('click', downloadProformaPdf);
+  document.getElementById('btnPfExportJson').addEventListener('click', exportProformaJson);
+  document.getElementById('btnPfChooseJsonFolder').addEventListener('click', chooseJsonFolder);
+  document.getElementById('btnPfImportJson').addEventListener('click', () => document.getElementById('pfFileImportJson').click());
+  document.getElementById('pfFileImportJson').addEventListener('change', importProformaJson);
+  document.getElementById('btnPfClear').addEventListener('click', clearProformaForm);
+  document.getElementById('pfSavedSearch').addEventListener('input', renderSavedProformas);
+  document.getElementById('btnPfSaveCompany').addEventListener('click', saveProformaBuyerToCompanyMaster);
+  const pfCompanySearch = document.getElementById('pfCompanySearch');
+  pfCompanySearch.addEventListener('input', renderProformaCompanySuggestions);
+  pfCompanySearch.addEventListener('focus', renderProformaCompanySuggestions);
+  pfCompanySearch.addEventListener('keydown', e => { if(e.key === 'Escape') hideProformaCompanySuggestions(); });
+  const btnPfPrint = document.getElementById('btnPfPrint');
+  if (btnPfPrint) btnPfPrint.addEventListener('click', () => { calculateProforma(); document.body.classList.add('proforma-printing'); window.print(); setTimeout(() => document.body.classList.remove('proforma-printing'), 500); });
+  document.getElementById('pfGst').addEventListener('input', calculateProforma);
+  ['pfNo','pfDate','pfValidUntil','pfQuoteRef'].forEach(id=>document.getElementById(id).addEventListener('input',calculateProforma));
+  document.getElementById('pfAdvance').addEventListener('input', calculateProforma);
+  document.getElementById('savedTypeFilter').addEventListener('change', renderSavedList);
+  window.addEventListener('afterprint', () => document.body.classList.remove('proforma-printing')); 
+  document.getElementById('btnExportJson').addEventListener('click', exportJson);
+  document.getElementById('btnChooseJsonFolder').addEventListener('click', chooseJsonFolder);
+  document.getElementById('btnImportJson').addEventListener('click', () => document.getElementById('fileImportJson').click());
+  document.getElementById('fileImportJson').addEventListener('change', importJson);
+  document.getElementById('btnClear').addEventListener('click', clearInvoice);
+  document.getElementById('invoiceType').addEventListener('change', () => { document.getElementById('invoiceTypePrint').textContent = document.getElementById('invoiceType').value; autosave(); });
+document.getElementById('invoiceTypePrint').textContent = document.getElementById('invoiceType').value;
+
+  document.getElementById('cgstPct').addEventListener('input', () => { calculateTotals(); autosave(); });
+  document.getElementById('sgstPct').addEventListener('input', () => { calculateTotals(); autosave(); });
+
+  const companySearch = document.getElementById('companySearch');
+  companySearch.addEventListener('input', () => {
+    setCompanyLookupStatus('');
+    renderCompanySuggestions();
+  });
+  companySearch.addEventListener('focus', renderCompanySuggestions);
+  companySearch.addEventListener('keydown', e => {
+    if (e.key === 'Escape') hideCompanySuggestions();
+  });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.company-search-wrap')) hideCompanySuggestions();
+  });
+  document.getElementById('btnSaveCompany').addEventListener('click', saveCurrentBuyerToCompanyMaster);
+
+  ['invoiceDate','destination','otherReference','transportNo','buyerName','buyerAddress','buyerGstin'].forEach(id => {
+    document.getElementById(id).addEventListener('input', autosave);
+  });
+
+  document.getElementById('sidebarToggle').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('sidebarOverlay').classList.add('open');
+  });
+  document.getElementById('closeSidebar').addEventListener('click', closeSidebar);
+  document.getElementById('sidebarOverlay').addEventListener('click', closeSidebar);
+  document.getElementById('searchSaved').addEventListener('input', renderSavedList);
+}
+
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+
+/* ---------------------------------------------------------------------
+   INVOICE NUMBER — e.g. BEU-0001-2026/27
+   Indian financial year runs 1 Apr – 31 Mar. The running number resets
+   to 0001 at the start of each new financial year.
+   --------------------------------------------------------------------- */
+function currentFinancialYear(){
+  const now = new Date();
+  const month = now.getMonth() + 1; // 1-12
+  const year = now.getFullYear();
+  const startYear = month >= 4 ? year : year - 1;
+  const endYearShort = String((startYear + 1) % 100).padStart(2, '0');
+  return { key: `${startYear}-${endYearShort}`, display: `${startYear}/${endYearShort}` };
+}
+
+function generateInvoiceNumber(){
+  const fy = currentFinancialYear();
+  const counterKey = LS_KEYS.counterPrefix + fy.key;
+  let counter = parseInt(localStorage.getItem(counterKey) || '0', 10) + 1;
+  localStorage.setItem(counterKey, String(counter));
+  return `${INVOICE_PREFIX}-${String(counter).padStart(4,'0')}-${fy.display}`;
+}
+
+/* ---------------------------------------------------------------------
+   ROW MANAGEMENT
+   --------------------------------------------------------------------- */
+function addRow(data){
+  const tbody = document.getElementById('itemsBody');
+  const rowId = 'row_' + (rowIdSeq++);
+  const tr = document.createElement('tr');
+  tr.dataset.rowId = rowId;
+  tr.innerHTML = `
+    <td class="col-sl">${tbody.children.length + 1}</td>
+    <td class="col-desc"><input type="text" class="f-desc" placeholder="Item description" value="${escAttr(data?.description)}"></td>
+    <td class="col-hsn"><input type="text" class="f-hsn" placeholder="HSN" value="${escAttr(data?.hsn)}"></td>
+    <td class="col-qty"><input type="number" class="f-qty" min="0" step="any" value="${data?.qty ?? ''}"></td>
+    <td class="col-unit"><input type="text" class="f-unit" placeholder="Nos" value="${escAttr(data?.unit ?? 'Nos')}"></td>
+    <td class="col-rate"><input type="number" class="f-rate" min="0" step="any" value="${data?.rate ?? ''}"></td>
+    <td class="col-amount f-amount">0.00</td>
+    <td class="col-action no-print"><button type="button" class="row-del-btn" title="Delete row">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+
+  tr.querySelectorAll('.f-qty, .f-rate').forEach(inp => {
+    inp.addEventListener('input', () => { updateRowAmount(tr); calculateTotals(); autosave(); });
+  });
+  tr.querySelectorAll('.f-desc, .f-hsn, .f-unit').forEach(inp => {
+    inp.addEventListener('input', autosave);
+  });
+  tr.querySelector('.row-del-btn').addEventListener('click', () => {
+    tr.remove();
+    renumberRows();
+    calculateTotals();
+    autosave();
+  });
+
+  updateRowAmount(tr);
+}
+
+function updateRowAmount(tr){
+  const qty = parseFloat(tr.querySelector('.f-qty').value) || 0;
+  const rate = parseFloat(tr.querySelector('.f-rate').value) || 0;
+  const amount = qty * rate;
+  tr.querySelector('.f-amount').textContent = amount.toFixed(2);
+}
+
+function renumberRows(){
+  document.querySelectorAll('#itemsBody tr').forEach((tr, idx) => {
+    tr.querySelector('.col-sl').textContent = idx + 1;
+  });
+}
+
+function escAttr(v){
+  if (v === undefined || v === null) return '';
+  return String(v).replace(/"/g, '&quot;');
+}
+
+/* ---------------------------------------------------------------------
+   CALCULATIONS
+   --------------------------------------------------------------------- */
+function calculateTotals(){
+  let subtotal = 0;
+  const hsnGroups = {}; // hsnCode -> taxable value total
+
+  document.querySelectorAll('#itemsBody tr').forEach(tr => {
+    updateRowAmount(tr);
+    const amount = parseFloat(tr.querySelector('.f-amount').textContent) || 0;
+    subtotal += amount;
+
+    const hsn = (tr.querySelector('.f-hsn').value || '').trim() || '—';
+    hsnGroups[hsn] = (hsnGroups[hsn] || 0) + amount;
+  });
+
+  const cgstPct = parseFloat(document.getElementById('cgstPct').value) || 0;
+  const sgstPct = parseFloat(document.getElementById('sgstPct').value) || 0;
+  const cgst = subtotal * cgstPct / 100;
+  const sgst = subtotal * sgstPct / 100;
+  const calculatedTotal = subtotal + cgst + sgst;
+  const grandTotal = Math.round(calculatedTotal);
+  const roundOff = grandTotal - calculatedTotal;
+
+  document.getElementById('subtotalVal').textContent = formatCurrency(subtotal);
+  document.getElementById('cgstVal').textContent = formatCurrency(cgst);
+  document.getElementById('sgstVal').textContent = formatCurrency(sgst);
+  document.getElementById('roundOffVal').textContent = formatCurrency(roundOff);
+  document.getElementById('grandTotalVal').textContent = formatCurrency(grandTotal);
+  // Locked single-text "9%" version shown during print/PDF export
+  document.getElementById('cgstPctStatic').textContent = trimPct(cgstPct) + '%';
+  document.getElementById('sgstPctStatic').textContent = trimPct(sgstPct) + '%';
+  document.getElementById('amountInWords').textContent = `Indian Rupees ${numberToIndianWords(grandTotal)} Only`;
+  document.getElementById('taxAmountInWords').textContent = `Indian Rupees ${numberToIndianWords(cgst + sgst)} Only`;
+
+  renderHsnSummary(hsnGroups, cgstPct, sgstPct);
+
+  return { subtotal, cgst, sgst, calculatedTotal, roundOff, grandTotal };
+}
+
+/* Renders the HSN/SAC-wise tax breakdown table: one row per distinct HSN
+   code used in the item rows, each showing its taxable value plus the
+   CGST/SGST split at the invoice's overall tax rates, and a Total row. */
+function renderHsnSummary(hsnGroups, cgstPct, sgstPct){
+  const tbody = document.getElementById('hsnBody');
+  tbody.innerHTML = '';
+
+  let totalTaxable = 0, totalCgst = 0, totalSgst = 0, totalTax = 0;
+
+  Object.keys(hsnGroups).forEach(hsn => {
+    const taxable = hsnGroups[hsn];
+    const cgstAmt = taxable * cgstPct / 100;
+    const sgstAmt = taxable * sgstPct / 100;
+    const rowTax = cgstAmt + sgstAmt;
+
+    totalTaxable += taxable;
+    totalCgst += cgstAmt;
+    totalSgst += sgstAmt;
+    totalTax += rowTax;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escHtml(hsn)}</td>
+      <td>${taxable.toFixed(2)}</td>
+      <td>${trimPct(cgstPct)}%</td>
+      <td>${cgstAmt.toFixed(2)}</td>
+      <td>${trimPct(sgstPct)}%</td>
+      <td>${sgstAmt.toFixed(2)}</td>
+      <td>${rowTax.toFixed(2)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('hsnTotalTaxable').textContent = totalTaxable.toFixed(2);
+  document.getElementById('hsnTotalCgst').textContent = totalCgst.toFixed(2);
+  document.getElementById('hsnTotalSgst').textContent = totalSgst.toFixed(2);
+  document.getElementById('hsnTotalTax').textContent = totalTax.toFixed(2);
+}
+
+function trimPct(n){
+  // Show "9" not "9.00", but keep "9.5" as-is
+  return (Math.round(n * 100) / 100).toString();
+}
+
+function formatCurrency(n){
+  return '₹ ' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function numberToIndianWords(amount){
+  amount = Math.round((amount + Number.EPSILON) * 100) / 100;
+  const rupees = Math.floor(amount);
+  const paise = Math.round((amount - rupees) * 100);
+  const words = integerToIndianWords(rupees);
+  let result = words ? words : 'Zero';
+  if (paise > 0){
+    result += ' and ' + integerToIndianWords(paise) + ' Paise';
+  }
+  return result;
+}
+
+function integerToIndianWords(num){
+  if (num === 0) return '';
+  const ones = ['', 'One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
+    'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const tens = ['', '', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+
+  function twoDigit(n){
+    if (n < 20) return ones[n];
+    return tens[Math.floor(n/10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+  }
+  function threeDigit(n){
+    if (n < 100) return twoDigit(n);
+    return ones[Math.floor(n/100)] + ' Hundred' + (n % 100 ? ' ' + twoDigit(n % 100) : '');
+  }
+
+  const crore = Math.floor(num / 10000000); num %= 10000000;
+  const lakh  = Math.floor(num / 100000);   num %= 100000;
+  const thousand = Math.floor(num / 1000);  num %= 1000;
+  const hundred = num;
+
+  let parts = [];
+  if (crore) parts.push(threeDigit(crore) + ' Crore');
+  if (lakh) parts.push(threeDigit(lakh) + ' Lakh');
+  if (thousand) parts.push(threeDigit(thousand) + ' Thousand');
+  if (hundred) parts.push(threeDigit(hundred));
+  return parts.join(' ');
+}
+
+/* ---------------------------------------------------------------------
+   GATHER / APPLY FORM DATA
+   --------------------------------------------------------------------- */
+function gatherInvoiceData(){
+  const items = [];
+  document.querySelectorAll('#itemsBody tr').forEach(tr => {
+    items.push({
+      description: tr.querySelector('.f-desc').value,
+      hsn: tr.querySelector('.f-hsn').value,
+      qty: tr.querySelector('.f-qty').value,
+      unit: tr.querySelector('.f-unit').value,
+      rate: tr.querySelector('.f-rate').value
+    });
+  });
+
+  return {
+    invoiceNo: document.getElementById('invoiceNo').value,
+    invoiceType: document.getElementById('invoiceType').value,
+    invoiceDate: document.getElementById('invoiceDate').value,
+    destination: document.getElementById('destination').value,
+    otherReference: document.getElementById('otherReference').value,
+    transportNo: document.getElementById('transportNo').value,
+    buyerName: document.getElementById('buyerName').value,
+    buyerAddress: document.getElementById('buyerAddress').value,
+    buyerGstin: document.getElementById('buyerGstin').value,
+    cgstPct: document.getElementById('cgstPct').value,
+    sgstPct: document.getElementById('sgstPct').value,
+    items
+  };
+}
+
+function applyInvoiceData(data){
+  document.getElementById('invoiceNo').value = data.invoiceNo || generateInvoiceNumber();
+  document.getElementById('invoiceType').value = data.invoiceType || 'TAX INVOICE';
+  document.getElementById('invoiceTypePrint').textContent = document.getElementById('invoiceType').value;
+  document.getElementById('invoiceDate').value = data.invoiceDate || todayIso();
+  document.getElementById('destination').value = data.destination || '';
+  document.getElementById('otherReference').value = data.otherReference || '';
+  document.getElementById('transportNo').value = data.transportNo || '';
+  document.getElementById('buyerName').value = data.buyerName || '';
+  document.getElementById('buyerAddress').value = data.buyerAddress || '';
+  document.getElementById('buyerGstin').value = data.buyerGstin || '';
+  document.getElementById('companySearch').value = data.buyerName || data.buyerGstin || '';
+  setCompanyLookupStatus('');
+  document.getElementById('cgstPct').value = data.cgstPct ?? 9;
+  document.getElementById('sgstPct').value = data.sgstPct ?? 9;
+
+  document.getElementById('itemsBody').innerHTML = '';
+  if (data.items && data.items.length){
+    data.items.forEach(item => addRow(item));
+  } else {
+    addRow(); addRow(); addRow();
+  }
+  calculateTotals();
+}
+
+function todayIso(){
+  const d = new Date();
+  return d.toISOString().slice(0,10);
+}
+
+/* ---------------------------------------------------------------------
+   FRESH / DRAFT RESTORE
+   --------------------------------------------------------------------- */
+function restoreDraftOrFresh(){
+  const draft = localStorage.getItem(LS_KEYS.draft);
+  if (draft){
+    try { applyInvoiceData(JSON.parse(draft)); return; }
+    catch(e){ /* fall through to fresh */ }
+  }
+  applyInvoiceData({ invoiceNo: generateInvoiceNumber(), invoiceDate: todayIso(), items: [] });
+}
+
+function startFreshInvoice(){
+  applyInvoiceData({ invoiceNo: generateInvoiceNumber(), invoiceDate: todayIso(), items: [] });
+  autosave();
+}
+
+/* ---------------------------------------------------------------------
+   AUTOSAVE (draft)
+   --------------------------------------------------------------------- */
+let autosaveTimer = null;
+function autosave(){
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(() => {
+    localStorage.setItem(LS_KEYS.draft, JSON.stringify(gatherInvoiceData()));
+    flashAutosave('Draft saved');
+  }, 400);
+}
+
+function flashAutosave(msg){
+  const el = document.getElementById('autosaveNote');
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(flashAutosave._t);
+  flashAutosave._t = setTimeout(() => { el.style.opacity = '0'; }, 1800);
+}
+
+/* ---------------------------------------------------------------------
+   SAVED INVOICES (sidebar)
+   --------------------------------------------------------------------- */
+function getSavedInvoices(){
+  try { return JSON.parse(localStorage.getItem(LS_KEYS.invoices)) || []; }
+  catch(e){ return []; }
+}
+function setSavedInvoices(list){ localStorage.setItem(LS_KEYS.invoices, JSON.stringify(list)); }
+
+function saveCurrentInvoice(){
+  calculateTotals();
+  const data = gatherInvoiceData();
+  if (!data.invoiceNo){
+    data.invoiceNo = generateInvoiceNumber();
+    document.getElementById('invoiceNo').value = data.invoiceNo;
+  }
+  const list = getSavedInvoices();
+  const existingIdx = list.findIndex(inv => inv.invoiceNo === data.invoiceNo);
+  const record = { ...data, savedAt: new Date().toISOString() };
+  if (existingIdx > -1) list[existingIdx] = record;
+  else list.unshift(record);
+
+  setSavedInvoices(list);
+  // After saving, show the newly saved record even if the sidebar was
+  // previously filtered to another document type.
+  const filter = document.getElementById('savedTypeFilter');
+  if (filter) filter.value = 'ALL';
+  renderSavedList();
+  flashAutosave('Invoice saved ✓');
+}
+
+function renderSavedList(){
+  const list = getSavedInvoices();
+  const query = (document.getElementById('searchSaved').value || '').trim().toLowerCase();
+  const typeFilter = document.getElementById('savedTypeFilter')?.value || 'ALL';
+  const filtered = list.filter(inv => {
+    const type = String(inv.invoiceType || 'TAX INVOICE').trim().toUpperCase();
+    const matchesType = typeFilter === 'ALL' || type === typeFilter;
+    const matchesQuery = !query || String(inv.invoiceNo || '').toLowerCase().includes(query) || String(inv.buyerName || '').toLowerCase().includes(query);
+    return matchesType && matchesQuery;
+  });
+
+  const ul = document.getElementById('savedList');
+  const empty = document.getElementById('savedEmpty');
+  ul.innerHTML = '';
+
+  if (filtered.length === 0){ empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  filtered.forEach(inv => {
+    const li = document.createElement('li');
+    li.className = 'saved-item';
+    li.innerHTML = `
+      <div class="saved-item__top">
+        <span class="saved-item__no">${escHtml(inv.invoiceNo)}</span>
+        <span class="saved-item__date">${escHtml(inv.invoiceDate || '')}</span>
+      </div>
+      <div style="font-size:10px;color:#64748b;font-weight:700;margin-top:4px">${escHtml(inv.invoiceType || 'TAX INVOICE')}</div>
+      <div class="saved-item__buyer">${escHtml(inv.buyerName || 'No buyer name')}</div>
+      <div class="saved-item__actions">
+        <button type="button" class="open">Open</button>
+        <button type="button" class="del">Delete</button>
+      </div>
+    `;
+    li.querySelector('.open').addEventListener('click', () => {
+      if ((inv.invoiceType || '').toUpperCase() === 'PROFORMA INVOICE') { openProforma(inv); }
+      else { closeProforma(); applyInvoiceData(inv); autosave(); }
+      closeSidebar();
+    });
+    li.querySelector('.del').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (confirm(`Delete saved invoice ${inv.invoiceNo}? This cannot be undone.`)){
+        setSavedInvoices(getSavedInvoices().filter(x => x.invoiceNo !== inv.invoiceNo));
+        renderSavedList();
+      }
+    });
+    ul.appendChild(li);
+  });
+}
+
+function setProformaCompanyStatus(message, ok=false){
+  const el=document.getElementById('pfCompanyStatus'); if(!el)return;
+  el.textContent=message||''; el.style.color=ok?'#16794b':'';
+}
+function hideProformaCompanySuggestions(){
+  const box=document.getElementById('pfCompanySuggestions'); if(box){box.innerHTML='';box.style.display='none';}
+}
+function fillProformaBuyerFromCompany(company){
+  if(!company)return;
+  document.getElementById('pfBuyer').value=company.name||'';
+  document.getElementById('pfGstin').value=company.gstin||'';
+  document.getElementById('pfAddress').value=company.address||'';
+  document.getElementById('pfCompanySearch').value=company.name||company.gstin||'';
+  hideProformaCompanySuggestions(); setProformaCompanyStatus('✓ Company details filled',true);
+}
+function renderProformaCompanySuggestions(){
+  const input=document.getElementById('pfCompanySearch'), box=document.getElementById('pfCompanySuggestions');
+  const q=input.value.trim(); box.innerHTML='';
+  if(!q){hideProformaCompanySuggestions();return;}
+  const results=findCompanies(q);
+  if(!results.length){box.innerHTML='<div style="padding:10px;color:#58708d;font-size:12px">No company found. Fill the customer details and save as company.</div>';box.style.display='block';return;}
+  results.forEach(company=>{
+    const item=document.createElement('div'); item.style.cssText='padding:9px 10px;cursor:pointer;border-bottom:1px solid #e2e8f0;font-size:12px';
+    const name=document.createElement('strong'); name.textContent=company.name||'Unnamed company'; name.style.display='block';
+    const details=document.createElement('span'); details.textContent=(company.gstin||'No GSTIN')+(company.address?' · '+company.address:''); details.style.cssText='display:block;color:#64748b;font-size:11px;margin-top:2px';
+    item.append(name,details); item.addEventListener('mousedown',e=>{e.preventDefault();fillProformaBuyerFromCompany(company);});
+    item.addEventListener('mouseenter',()=>item.style.background='#edf3fa'); item.addEventListener('mouseleave',()=>item.style.background='#fff'); box.appendChild(item);
+  }); box.style.display='block';
+}
+function saveProformaBuyerToCompanyMaster(showMessage=true){
+  const name=document.getElementById('pfBuyer').value.trim();
+  const address=document.getElementById('pfAddress').value.trim();
+  const gstin=document.getElementById('pfGstin').value.trim().toUpperCase();
+  if(!name&&!gstin){setProformaCompanyStatus('Enter a company name or GSTIN first');document.getElementById('pfBuyer').focus();return false;}
+  const companies=getCompanyMaster();
+  const index=companies.findIndex(c=>(gstin&&normalizeCompanyText(c.gstin)===normalizeCompanyText(gstin))||(name&&normalizeCompanyText(c.name)===normalizeCompanyText(name)));
+  const record={name,address,gstin,updatedAt:new Date().toISOString()};
+  if(index>=0)companies[index]={...companies[index],...record};else companies.unshift(record);
+  setCompanyMaster(companies);
+  document.getElementById('pfCompanySearch').value=name||gstin;
+  hideProformaCompanySuggestions();
+  if(showMessage)setProformaCompanyStatus(index>=0?'✓ Company updated in Company Master':'✓ Company saved to Company Master',true);
+  return true;
+}
+
+let pfEditingNo = '';
+function financialYearLabel(date = new Date()) {
+  const y = date.getFullYear();
+  const start = date.getMonth() >= 3 ? y : y - 1;
+  return `${start}-${String((start + 1) % 100).padStart(2, '0')}`;
+}
+function generateProformaNumber() {
+  const fy = financialYearLabel();
+  const prefix = `PI/${fy}/`;
+  const saved = getSavedInvoices().filter(x => String(x.invoiceType || '').toUpperCase() === 'PROFORMA INVOICE');
+  let max = 0;
+  saved.forEach(x => {
+    const no = String(x.invoiceNo || '');
+    if (no.startsWith(prefix)) {
+      const n = parseInt(no.slice(prefix.length), 10);
+      if (Number.isFinite(n)) max = Math.max(max, n);
+    }
+  });
+  // Keep a local counter as well, so a new draft opened before saving gets a distinct number on this browser.
+  const key = `bhavani_pf_sequence_${fy}`;
+  const local = parseInt(localStorage.getItem(key) || '0', 10) || 0;
+  const next = Math.max(max, local) + 1;
+  localStorage.setItem(key, String(next));
+  return `${prefix}${String(next).padStart(3, '0')}`;
+}
+function openProforma(data = null){
+  document.body.classList.add('proforma-open');
+  document.getElementById('proformaView').style.display = 'block';
+  document.querySelector('.sheet-wrapper').style.display = 'none';
+  document.querySelector('.toolbar').style.display = 'none';
+  pfEditingNo = data?.invoiceNo || '';
+  document.getElementById('pfNo').value = data?.invoiceNo || generateProformaNumber();
+  document.getElementById('pfDate').value = data?.invoiceDate || todayIso();
+  document.getElementById('pfValidUntil').value = data?.validUntil || '';
+  document.getElementById('pfQuoteRef').value = data?.quotationReference || '';
+  document.getElementById('pfProject').value = data?.projectName || '';
+  document.getElementById('pfSupply').value = data?.placeOfSupply || ''; 
+  document.getElementById('pfBuyer').value = data?.buyerName || document.getElementById('buyerName').value || '';
+  document.getElementById('pfGstin').value = data?.buyerGstin || document.getElementById('buyerGstin').value || '';
+  document.getElementById('pfAddress').value = data?.buyerAddress || document.getElementById('buyerAddress').value || '';
+  document.getElementById('pfCompanySearch').value = data?.buyerName || document.getElementById('pfBuyer').value || data?.buyerGstin || '';
+  setProformaCompanyStatus('');
+  document.getElementById('pfGst').value = data?.pfGst ?? 18;
+  document.getElementById('pfAdvance').value = data?.advancePayment ?? 0;
+  document.getElementById('pfTerms').value = data?.paymentTerms || '';
+  const body = document.getElementById('pfItems'); body.innerHTML = '';
+  (data?.items?.length ? data.items : [{description:'',hsn:'',qty:'1',rate:'0'}]).forEach(addProformaRow);
+  calculateProforma(); renderSavedProformas(); window.scrollTo({top:0,behavior:'smooth'});
+}
+function closeProforma(){ document.body.classList.remove('proforma-open'); document.getElementById('proformaView').style.display='none'; document.querySelector('.sheet-wrapper').style.display=''; document.querySelector('.toolbar').style.display=''; document.body.classList.remove('proforma-printing'); }
+function addProformaRow(item={}){
+  const tr=document.createElement('tr'); tr.innerHTML=`<td style="padding:6px;border-bottom:1px solid #e2e8f0"><input class="pf-desc" value="${escHtml(item.description||'')}" style="width:100%;padding:8px;border:1px solid #d5deea;border-radius:4px"></td><td style="padding:6px;border-bottom:1px solid #e2e8f0"><input class="pf-hsn" value="${escHtml(item.hsn||'')}" style="width:85px;padding:8px;border:1px solid #d5deea;border-radius:4px"></td><td style="padding:6px;border-bottom:1px solid #e2e8f0"><input class="pf-qty" type="number" min="0" step="any" value="${escHtml(item.qty??'1')}" style="width:70px;padding:8px;border:1px solid #d5deea;border-radius:4px"></td><td style="padding:6px;border-bottom:1px solid #e2e8f0"><input class="pf-rate" type="number" min="0" step="any" value="${escHtml(item.rate??'0')}" style="width:110px;padding:8px;border:1px solid #d5deea;border-radius:4px"></td><td class="pf-amount" style="padding:10px;text-align:right;border-bottom:1px solid #e2e8f0">₹0.00</td><td class="no-print" style="padding:6px"><button type="button" class="pf-remove" aria-label="Remove item">✕</button></td>`;
+  document.getElementById('pfItems').appendChild(tr); tr.querySelectorAll('input').forEach(i=>i.addEventListener('input',calculateProforma)); tr.querySelector('.pf-remove').addEventListener('click',()=>{tr.remove();calculateProforma();}); calculateProforma();
+}
+function calculateProforma(){
+  let subtotal=0; document.querySelectorAll('#pfItems tr').forEach(tr=>{const qty=Number(tr.querySelector('.pf-qty').value)||0,rate=Number(tr.querySelector('.pf-rate').value)||0,amt=qty*rate;subtotal+=amt;tr.querySelector('.pf-amount').textContent='₹'+amt.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});});
+  const tax=subtotal*(Number(document.getElementById('pfGst').value)||0)/100, raw=subtotal+tax, grand=Math.round(raw), round=grand-raw;
+  document.getElementById('pfSubtotal').textContent='₹'+subtotal.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('pfTax').textContent='₹'+tax.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('pfRound').textContent=(round<0?'-':'')+'₹'+Math.abs(round).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('pfGrand').textContent='₹'+grand.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const words=numberToIndianWords(grand); document.getElementById('pfAmountWordsText').textContent='Indian Rupees '+words+' Only.';
+  document.getElementById('pfNoPreview').textContent=document.getElementById('pfNo').value||'—';
+  document.getElementById('pfDatePreview').textContent=formatPfDate(document.getElementById('pfDate').value);
+  document.getElementById('pfValidPreview').textContent=formatPfDate(document.getElementById('pfValidUntil').value);
+  document.getElementById('pfQuoteRefPreview').textContent=document.getElementById('pfQuoteRef').value||'—';
+}
+function formatPfDate(v){if(!v)return '—';const d=new Date(v+'T00:00:00');return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}
+function numberToIndianWords(n){
+  n=Math.round(Number(n)||0); if(n===0)return 'Zero';
+  const ones=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const tens=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  function under1000(x){let out='';if(x>=100){out+=ones[Math.floor(x/100)]+' Hundred';x%=100;if(x)out+=' ';}if(x>=20){out+=tens[Math.floor(x/10)];if(x%10)out+=' '+ones[x%10];}else if(x>0)out+=ones[x];return out;}
+  let out='';const units=[[10000000,'Crore'],[100000,'Lakh'],[1000,'Thousand'],[1,'']];for(const [v,label] of units){if(n>=v){const q=Math.floor(n/v);out+=(out?' ':'')+under1000(q)+(label?' '+label:'');n%=v;}}return out;
+}
+async function downloadProformaPdf() {
+  calculateProforma();
+  const btn = document.getElementById('btnPfDownloadPdf');
+  const oldText = btn.textContent;
+  btn.textContent = 'Generating PDF…';
+  btn.disabled = true;
+  let wrapper = null;
+  try {
+    if (!window.html2canvas || !window.jspdf?.jsPDF) {
+      alert('Offline PDF mode: choose “Save as PDF” in the print dialog.');
+      document.body.classList.contains('proforma-open') ? (document.body.classList.add('proforma-printing'), window.print()) : window.print();
+      return;
+    }
+    if (document.fonts?.ready) await document.fonts.ready;
+    const clone = document.getElementById('proformaView').cloneNode(true);
+    clone.id = 'proformaPdfClone';
+    clone.style.display = 'block';
+    clone.style.width = '1000px';
+    clone.style.maxWidth = '1000px';
+    clone.style.margin = '0';
+    clone.style.padding = '20px';
+    clone.style.border = '0';
+    clone.style.borderRadius = '0';
+    clone.style.boxShadow = 'none';
+    clone.style.position = 'static';
+
+    // Build a PDF-only header: company heading, centered document title, then one summary strip.
+    // The live editing screen is not modified by these changes.
+    const pdfHeader = clone.querySelector('.pf-company-header');
+    if (pdfHeader) {
+      // Align company identity on the left and contact details on the right in one stable row.
+      pdfHeader.style.cssText = 'display:flex;flex-direction:row;justify-content:space-between;align-items:center;flex-wrap:nowrap;gap:20px;width:100%;margin:0 0 14px;padding:0 0 12px;border-bottom:2px solid #17365d;box-sizing:border-box';
+      const companyBlock = pdfHeader.firstElementChild;
+      const companyName = companyBlock?.firstElementChild;
+      const subtitle = companyBlock?.children?.[1];
+      if (companyBlock) companyBlock.style.cssText = 'flex:0 1 44%;width:44%;min-width:0;text-align:left;margin:0;overflow-wrap:anywhere';
+      if (companyName) companyName.style.cssText = "font-family:'Barlow Condensed',Impact,sans-serif;font-size:30px;line-height:1.1;letter-spacing:1.2px;color:#17365d;font-weight:700;text-transform:uppercase;margin:0 0 3px;white-space:nowrap";
+      if (subtitle) subtitle.style.cssText = 'font-size:16px;line-height:1.35;color:#17365d;margin-top:4px';
+      const contact = pdfHeader.children[1];
+      if (contact) contact.style.cssText = 'flex:1 1 0;width:auto;min-width:0;max-width:none;margin:0;text-align:right;align-self:center;font-size:12px;color:#334155;line-height:1.55;overflow-wrap:anywhere;word-break:normal';
+    }
+    const oldTitleSummary = pdfHeader?.nextElementSibling;
+    if (oldTitleSummary) {
+      const titleBlock = document.createElement('div');
+      titleBlock.style.cssText = 'text-align:center;margin:14px 0 10px;padding:0 0 8px';
+      titleBlock.innerHTML = '<div style="font-family:Inter,Arial,sans-serif;font-size:25px;font-weight:800;letter-spacing:1px;color:#17365d">PROFORMA INVOICE</div><div style="font-size:12px;color:#66758a;margin-top:4px">Preliminary document · Not a tax invoice</div>';
+      const summary = document.createElement('div');
+      summary.style.cssText = 'display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden;margin-bottom:18px;background:#f3f7fc';
+      const summaryItems = [
+        ['PROFORMA INVOICE NO.', document.getElementById('pfNo').value || '—'],
+        ['ISSUE DATE', formatPfDate(document.getElementById('pfDate').value)],
+        ['VALID UNTIL', formatPfDate(document.getElementById('pfValidUntil').value)],
+        ['QUOTATION REFERENCE', document.getElementById('pfQuoteRef').value || '—']
+      ];
+      summaryItems.forEach(([label,value], index) => {
+        const cell = document.createElement('div');
+        cell.style.cssText = `padding:10px 12px;min-width:0;${index ? 'border-left:1px solid #d7e1ee;' : ''}`;
+        const heading = document.createElement('div'); heading.textContent = label;
+        heading.style.cssText = 'font-size:10px;font-weight:700;letter-spacing:.45px;color:#64748b;margin-bottom:5px';
+        const val = document.createElement('div'); val.textContent = value || '—';
+        val.style.cssText = 'font-size:13px;font-weight:800;color:#17365d;overflow-wrap:anywhere';
+        cell.append(heading,val); summary.appendChild(cell);
+      });
+      oldTitleSummary.replaceWith(titleBlock, summary);
+    }
+
+    // The summary strip above is the only place the four document-reference fields appear in the PDF.
+    ['pfNo','pfDate','pfValidUntil','pfQuoteRef'].forEach(id => {
+      const input = clone.querySelector('#' + id);
+      const label = input?.closest('label');
+      if (label) label.remove();
+    });
+    clone.querySelectorAll('.no-print, button, input[type="file"]').forEach(el => el.remove());
+    // Convert form controls to printable text. Labels and values stack vertically; values are bold and highlighted.
+    clone.querySelectorAll('input, textarea, select').forEach(el => {
+      const span = document.createElement('span');
+      let value = el.value || '';
+      if (el.id === 'pfDate' || el.id === 'pfValidUntil') value = formatPfDate(value);
+      span.textContent = value || '—';
+      span.style.cssText = 'display:block;box-sizing:border-box;width:100%;min-height:22px;white-space:pre-wrap;overflow-wrap:anywhere;color:#17365d;font-weight:700;background:#edf3fa;border:1px solid #d7e4f2;border-radius:4px;padding:5px 7px;margin-top:4px';
+      el.replaceWith(span);
+    });
+    clone.querySelectorAll('label').forEach(label => {
+      label.style.cssText += ';display:block;min-width:0;font-size:11px;font-weight:700;color:#52627a;line-height:1.35';
+      const textNode = [...label.childNodes].find(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim());
+      if (textNode) textNode.textContent = textNode.textContent.trim();
+    });
+    clone.querySelectorAll('#pfItems tr').forEach(tr => {
+      // The .no-print action cell was already removed above. Do not remove
+      // the final remaining cell: it is the calculated Amount column.
+      if (tr.lastElementChild?.classList.contains('no-print')) tr.lastElementChild.remove();
+      tr.querySelectorAll('input').forEach(el => {
+        const span = document.createElement('span'); span.textContent = el.value || '—';
+        span.style.cssText = 'display:block;white-space:pre-wrap;overflow-wrap:anywhere;padding:3px 0'; el.replaceWith(span);
+      });
+    });
+    clone.querySelectorAll('#pfItems th.no-print, #pfItems td.no-print').forEach(el => el.remove());
+    clone.querySelectorAll('label').forEach(label => {
+      const textNode = [...label.childNodes].find(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim());
+      if (textNode) textNode.textContent = textNode.textContent.trim() + ' ';
+    });
+    wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:fixed;left:-12000px;top:0;width:1000px;background:#fff;z-index:-1';
+    wrapper.appendChild(clone); document.body.appendChild(wrapper);
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const canvas = await html2canvas(clone, {scale:2, useCORS:true, backgroundColor:'#ffffff', logging:false, width:1000, windowWidth:1000});
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','mm','a4');
+    const pageWidth = 210, pageHeight = 297, margin = 8;
+    const usableWidth = pageWidth - margin * 2;
+    const imageHeight = canvas.height * usableWidth / canvas.width;
+    const imgData = canvas.toDataURL('image/jpeg', 0.94);
+    let remaining = imageHeight, y = margin;
+    let offset = 0;
+    while (remaining > 0) {
+      const sliceHeightMm = Math.min(pageHeight - margin * 2, remaining);
+      const sourceHeight = Math.round(sliceHeightMm * canvas.width / usableWidth);
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = canvas.width; pageCanvas.height = Math.min(sourceHeight, canvas.height - offset);
+      const ctx = pageCanvas.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,pageCanvas.width,pageCanvas.height);
+      ctx.drawImage(canvas, 0, offset, canvas.width, pageCanvas.height, 0, 0, pageCanvas.width, pageCanvas.height);
+      const pageImage = pageCanvas.toDataURL('image/jpeg',0.94);
+      if (offset > 0) pdf.addPage();
+      const actualHeight = pageCanvas.height * usableWidth / canvas.width;
+      pdf.addImage(pageImage,'JPEG',margin,margin,usableWidth,actualHeight,undefined,'FAST');
+      offset += pageCanvas.height; remaining -= actualHeight;
+      if (pageCanvas.height <= 0) break;
+    }
+    const no = document.getElementById('pfNo').value.trim() || 'proforma-invoice';
+    pdf.save(`${no.replace(/[^a-z0-9._-]/gi,'_')}.pdf`);
+  } catch (err) {
+    console.error(err);
+    alert('Could not generate the PDF download. Check your internet connection and try again.');
+  } finally {
+    if (wrapper) wrapper.remove();
+    btn.textContent = oldText; btn.disabled = false;
+  }
+}
+
+function saveProforma(){
+  calculateProforma();
+  // Keep the customer in the shared Company Master whenever a proforma is saved.
+  saveProformaBuyerToCompanyMaster(false);
+  const invoiceNo=document.getElementById('pfNo').value.trim()||('PF-'+Date.now());document.getElementById('pfNo').value=invoiceNo;
+  const items=[...document.querySelectorAll('#pfItems tr')].map(tr=>({description:tr.querySelector('.pf-desc').value,hsn:tr.querySelector('.pf-hsn').value,qty:tr.querySelector('.pf-qty').value,rate:tr.querySelector('.pf-rate').value,unit:'Nos'}));
+  const record={invoiceNo,invoiceType:'PROFORMA INVOICE',invoiceDate:document.getElementById('pfDate').value,validUntil:document.getElementById('pfValidUntil').value,quotationReference:document.getElementById('pfQuoteRef').value,projectName:document.getElementById('pfProject').value,placeOfSupply:document.getElementById('pfSupply').value,buyerName:document.getElementById('pfBuyer').value,buyerGstin:document.getElementById('pfGstin').value,buyerAddress:document.getElementById('pfAddress').value,items,pfGst:Number(document.getElementById('pfGst').value)||0,advancePayment:Number(document.getElementById('pfAdvance').value)||0,paymentTerms:document.getElementById('pfTerms').value,subtotal:Number(document.getElementById('pfSubtotal').textContent.replace(/[^0-9.]/g,''))||0,grandTotal:Number(document.getElementById('pfGrand').textContent.replace(/[^0-9.]/g,''))||0,savedAt:new Date().toISOString()};
+  const list=getSavedInvoices();
+  const idx=list.findIndex(x=>x.invoiceNo===invoiceNo && String(x.invoiceType||'TAX INVOICE').toUpperCase()==='PROFORMA INVOICE');
+  if(idx>=0) list[idx]=record; else list.unshift(record);
+  setSavedInvoices(list);
+  // Always reveal the newly saved proforma in Saved Invoices.
+  const filter=document.getElementById('savedTypeFilter');
+  if(filter) filter.value='ALL';
+  const search=document.getElementById('searchSaved');
+  if(search) search.value='';
+  renderSavedList();
+  renderSavedProformas();
+  pfEditingNo=invoiceNo;
+  flashAutosave('Proforma saved ✓ — visible in Saved Proformas');
+}
+
+
+function getCurrentProformaData(){
+  calculateProforma();
+  const invoiceNo=document.getElementById('pfNo').value.trim()||('PF-'+Date.now());
+  document.getElementById('pfNo').value=invoiceNo;
+  const items=[...document.querySelectorAll('#pfItems tr')].map(tr=>({description:tr.querySelector('.pf-desc').value,hsn:tr.querySelector('.pf-hsn').value,qty:tr.querySelector('.pf-qty').value,rate:tr.querySelector('.pf-rate').value,unit:'Nos'}));
+  return {invoiceNo,invoiceType:'PROFORMA INVOICE',invoiceDate:document.getElementById('pfDate').value,validUntil:document.getElementById('pfValidUntil').value,quotationReference:document.getElementById('pfQuoteRef').value,projectName:document.getElementById('pfProject').value,placeOfSupply:document.getElementById('pfSupply').value,buyerName:document.getElementById('pfBuyer').value,buyerGstin:document.getElementById('pfGstin').value,buyerAddress:document.getElementById('pfAddress').value,items,pfGst:Number(document.getElementById('pfGst').value)||0,advancePayment:Number(document.getElementById('pfAdvance').value)||0,paymentTerms:document.getElementById('pfTerms').value,subtotal:Number(document.getElementById('pfSubtotal').textContent.replace(/[^0-9.]/g,''))||0,grandTotal:Number(document.getElementById('pfGrand').textContent.replace(/[^0-9.]/g,''))||0,savedAt:new Date().toISOString()};
+}
+function renderSavedProformas(){
+  const ul=document.getElementById('pfSavedList'); if(!ul)return;
+  const q=(document.getElementById('pfSavedSearch')?.value||'').trim().toLowerCase();
+  const items=getSavedInvoices().filter(x=>String(x.invoiceType||'').toUpperCase()==='PROFORMA INVOICE').filter(x=>!q||String(x.invoiceNo||'').toLowerCase().includes(q)||String(x.buyerName||'').toLowerCase().includes(q));
+  ul.innerHTML=''; const empty=document.getElementById('pfSavedEmpty');
+  if(!items.length){empty.style.display='block';return;} empty.style.display='none';
+  items.forEach(rec=>{const li=document.createElement('li');li.style.cssText='border:1px solid #d9e1ea;border-radius:7px;padding:10px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap';
+    const info=document.createElement('div');info.innerHTML='<strong>'+escHtml(rec.invoiceNo||'Proforma')+'</strong><div style="font-size:12px;color:#64748b;margin-top:3px">'+escHtml(rec.buyerName||'No customer')+' · '+escHtml(rec.invoiceDate||'')+'</div>';
+    const actions=document.createElement('div');actions.style.cssText='display:flex;gap:6px';
+    const open=document.createElement('button');open.type='button';open.className='btn btn--outline';open.textContent='Open';open.addEventListener('click',()=>openProforma(rec));
+    const del=document.createElement('button');del.type='button';del.className='btn btn--danger';del.textContent='Delete';del.addEventListener('click',()=>{if(confirm('Delete proforma '+(rec.invoiceNo||'')+'? This cannot be undone.')){setSavedInvoices(getSavedInvoices().filter(x=>!(x.invoiceNo===rec.invoiceNo&&String(x.invoiceType||'').toUpperCase()==='PROFORMA INVOICE')));renderSavedProformas();renderSavedList();}});
+    actions.append(open,del);li.append(info,actions);ul.appendChild(li);
+  });
+}
+async function exportProformaJson(){
+  const data=getCurrentProformaData();
+  if('showDirectoryPicker' in window){
+    try{const folder=await getInvoiceJsonFolder();if(folder){if(!(await hasReadWritePermission(folder))){alert('Permission denied. Please select the folder again.');return;}const h=await folder.getFileHandle(safeJsonFileName(data.invoiceNo||'proforma')+'.json',{create:true});const w=await h.createWritable();await w.write(JSON.stringify(data,null,2));await w.close();flashAutosave('Proforma JSON saved ✓');return;}}catch(e){if(e.name==='AbortError')return;console.error(e);}
+  }
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=safeJsonFileName(data.invoiceNo||'proforma')+'.json';a.click();URL.revokeObjectURL(url);flashAutosave('Proforma JSON downloaded ✓');
+}
+function importProformaJson(e){
+  const file=e.target.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);if(!data||(!data.invoiceNo&&!data.items))throw new Error('Invalid proforma');data.invoiceType='PROFORMA INVOICE';openProforma(data);flashAutosave('Proforma JSON loaded ✓');}catch(err){alert('This file is not a valid proforma JSON.');} };reader.readAsText(file);e.target.value='';
+}
+function clearProformaForm(){
+  if(!confirm('Clear the current proforma? Unsaved changes will be lost.'))return;
+  openProforma();
+  ['pfQuoteRef','pfValidUntil','pfBuyer','pfGstin','pfProject','pfSupply','pfAddress','pfTerms'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pfGst').value=18;document.getElementById('pfAdvance').value=0;document.getElementById('pfItems').innerHTML='';addProformaRow({description:'',hsn:'',qty:'1',rate:'0'});calculateProforma();
+}
+
+function escHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
+}
+
+/* ---------------------------------------------------------------------
+   JSON EXPORT / IMPORT
+   --------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------
+   JSON EXPORT — SAVE DIRECTLY TO A USER-SELECTED FOLDER
+   Chrome/Edge File System Access API + IndexedDB for remembering the
+   selected folder on this browser/device.
+   --------------------------------------------------------------------- */
+const JSON_FOLDER_DB = 'invGen_jsonFolderDB';
+const JSON_FOLDER_STORE = 'handles';
+const JSON_FOLDER_KEY = 'invoiceFolder';
+
+function openJsonFolderDB(){
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(JSON_FOLDER_DB, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(JSON_FOLDER_STORE)) {
+        db.createObjectStore(JSON_FOLDER_STORE);
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function getSavedJsonFolder(){
+  try{
+    const db = await openJsonFolderDB();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(JSON_FOLDER_STORE, 'readonly');
+      const req = tx.objectStore(JSON_FOLDER_STORE).get(JSON_FOLDER_KEY);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  }catch(e){
+    console.warn('Could not read saved invoice folder:', e);
+    return null;
+  }
+}
+
+async function saveJsonFolder(handle){
+  const db = await openJsonFolderDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(JSON_FOLDER_STORE, 'readwrite');
+    tx.objectStore(JSON_FOLDER_STORE).put(handle, JSON_FOLDER_KEY);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function clearSavedJsonFolder(){
+  try{
+    const db = await openJsonFolderDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(JSON_FOLDER_STORE, 'readwrite');
+      tx.objectStore(JSON_FOLDER_STORE).delete(JSON_FOLDER_KEY);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }catch(e){
+    console.warn('Could not clear saved invoice folder:', e);
+  }
+}
+
+async function hasReadWritePermission(handle){
+  if (!handle || !handle.queryPermission) return true;
+
+  const permission = await handle.queryPermission({ mode: 'readwrite' });
+  if (permission === 'granted') return true;
+
+  if (permission === 'prompt') {
+    return (await handle.requestPermission({ mode: 'readwrite' })) === 'granted';
+  }
+
+  return false;
+}
+
+async function chooseJsonFolder(){
+  if (!('showDirectoryPicker' in window)) {
+    alert('Direct folder saving is not supported in this browser. Please use Google Chrome or Microsoft Edge.');
+    return null;
+  }
+
+  try{
+    const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    await saveJsonFolder(handle);
+    flashAutosave(`Invoice JSON folder set: ${handle.name} ✓`);
+    return handle;
+  }catch(e){
+    if (e.name !== 'AbortError') {
+      console.error(e);
+      alert('Could not select the invoice folder.');
+    }
+    return null;
+  }
+}
+
+async function getInvoiceJsonFolder(){
+  let handle = await getSavedJsonFolder();
+
+  if (handle) {
+    try{
+      if (await hasReadWritePermission(handle)) return handle;
+    }catch(e){
+      console.warn('Saved invoice folder permission unavailable:', e);
+    }
+  }
+
+  return await chooseJsonFolder();
+}
+
+function safeJsonFileName(name){
+  return String(name || 'invoice')
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '_')
+    .trim() || 'invoice';
+}
+
+async function exportJson(){
+  calculateTotals();
+  const data = gatherInvoiceData();
+
+  // Chrome/Edge: save directly into the selected folder.
+  if ('showDirectoryPicker' in window) {
+    try{
+      const folder = await getInvoiceJsonFolder();
+      if (!folder) return;
+
+      if (!(await hasReadWritePermission(folder))) {
+        await clearSavedJsonFolder();
+        alert('Permission to write to the selected folder was not granted. Please select the folder again.');
+        return;
+      }
+
+      const fileName = `${safeJsonFileName(data.invoiceNo || 'invoice')}.json`;
+      const fileHandle = await folder.getFileHandle(fileName, { create: true });
+      const writable = await fileHandle.createWritable();
+
+      await writable.write(JSON.stringify(data, null, 2));
+      await writable.close();
+
+      flashAutosave(`Saved ${fileName} ✓`);
+      return;
+    }catch(e){
+      if (e.name === 'AbortError') return;
+
+      console.error('Direct folder save failed:', e);
+      alert('Could not save to the selected folder. The normal browser download will be used instead.');
+    }
+  }
+
+  // Fallback for browsers without File System Access API.
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${safeJsonFileName(data.invoiceNo || 'invoice')}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  flashAutosave('JSON downloaded ✓');
+}
+
+
+function importJson(e){
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      applyInvoiceData(data);
+      autosave();
+      flashAutosave('Invoice loaded ✓');
+    } catch(err){
+      alert('This file is not a valid invoice JSON.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+/* ---------------------------------------------------------------------
+   CLEAR INVOICE
+   --------------------------------------------------------------------- */
+function clearInvoice(){
+  if (confirm('Clear the current invoice? Unsaved changes will be lost.')){
+    startFreshInvoice();
+  }
+}
+
+/* ---------------------------------------------------------------------
+   PDF DOWNLOAD
+   To avoid the blurry/"ghosted" text that html2canvas produces when it
+   has to rasterize live <input>/<textarea> elements, we build a plain
+   text-only clone of the invoice sheet (same classes, same layout) and
+   capture THAT instead. We also wait for web fonts to finish loading so
+   glyphs aren't swapped mid-capture.
+   --------------------------------------------------------------------- */
+function buildStaticClone(){
+  const original = document.getElementById('invoiceSheet');
+  const clone = original.cloneNode(true);
+  clone.removeAttribute('id');
+
+  // Replace every input/textarea inside the clone with static text.
+  // Fields already marked "no-print" (e.g. the CGST/SGST % inputs, which
+  // have a dedicated .pct-static "9%" companion element) are simply
+  // removed instead, so their value isn't shown twice.
+  clone.querySelectorAll('input, textarea').forEach(field => {
+    if (field.classList.contains('no-print')) {
+      field.remove();
+      return;
+    }
+    const span = document.createElement('div');
+    span.className = field.closest('td') ? 'cell-static' : 'field-static';
+    let val = field.value;
+    if (field.type === 'date' && val) {
+      const [y, m, d] = val.split('-');
+      val = `${d}-${m}-${y}`;
+    }
+    span.textContent = val || '';
+    if (field.id === 'buyerName') span.classList.add('buyer-name-highlight');
+    field.replaceWith(span);
+  });
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'pdf-export-clone';
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+  return wrapper;
+}
+
+async function downloadPdf(){
+  calculateTotals();
+  const btn = document.getElementById('btnPdf');
+  const originalLabel = btn.textContent;
+  btn.textContent = 'Generating…';
+  btn.disabled = true;
+
+  let wrapper = null;
+  try {
+    if (!window.html2canvas || !window.jspdf?.jsPDF) {
+      alert('Offline PDF mode: choose “Save as PDF” in the print dialog.');
+      window.print();
+      return;
+    }
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+
+    wrapper = buildStaticClone();
+    // Let the browser paint the clone before we snapshot it
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    const target = wrapper.firstElementChild;
+    fitToOnePage(target, wrapper);
+    // Let the browser apply the fit transform before we snapshot it
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    const canvas = await html2canvas(target, {
+      scale: 2.5,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+    heightLeft -= pageHeight;
+
+    while (heightLeft > 0){
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+      heightLeft -= pageHeight;
+    }
+
+    const invoiceNo = document.getElementById('invoiceNo').value || 'invoice';
+    pdf.save(`${invoiceNo}.pdf`);
+  } catch(err){
+    console.error(err);
+    alert('Direct PDF export is unavailable in this offline build. The browser print dialog will open; choose “Save as PDF” to create a PDF without internet.'); window.print();
+  } finally {
+    if (wrapper) wrapper.remove();
+    btn.textContent = originalLabel;
+    btn.disabled = false;
+  }
+}
+</script>
+
+</body>
+</html>
