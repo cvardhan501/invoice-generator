@@ -5,8 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Invoice Generator | Aluminium Fabrication Works</title>
 <link rel="icon" type="image/png" href="Invoice Generator App Logo.png">
-<!-- Optional online fonts are intentionally omitted: system-font fallbacks keep the app fully usable offline. -->
-<link rel="icon" type="image/png" href="Invoice Generator App Logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="vendor/html2canvas.min.js"></script>
+<script src="vendor/jspdf.umd.min.js"></script>
 <style>
 /* =====================================================================
    INVOICE GENERATOR — STYLESHEET
@@ -605,7 +608,8 @@ button, input, textarea{font-family:inherit;}
   </div>
   <p id="pfComputerGenerated" style="margin:14px 0 0;text-align:center;font-size:11px;color:#64748b">This is a computer-generated proforma invoice and does not require a physical signature.</p>
   <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:22px;padding:14px;background:#f8fafc;border:1px solid #d9e1ea;border-radius:8px">
-    <button id="btnPfDownloadPdf" class="btn btn--outline" type="button">⬇️ Download / Save PDF</button>
+    <button id="btnPfDownloadPdf" class="btn btn--outline" type="button">⬇️ Download PDF</button>
+    <button id="btnPfPrint" class="btn btn--outline" type="button">🖨️ Print Proforma</button>
     <button id="btnPfSave" class="btn btn--primary" type="button">💾 Save Proforma</button>
     <button id="btnPfExportJson" class="btn btn--outline" type="button">↓ Save JSON to Folder</button>
     <button id="btnPfChooseJsonFolder" class="btn btn--outline" type="button">📁 Set Save Folder</button>
@@ -651,38 +655,392 @@ body.proforma-open #proformaView { margin: 20px auto; }
   #proformaView > div:last-child { gap: 8px !important; }
   #proformaView > div:last-child .btn { flex: 1 1 100%; justify-content: center; }
 }
-@media print {
-  body.proforma-printing * { visibility:hidden!important; }
-  body.proforma-printing #proformaView, body.proforma-printing #proformaView * { visibility:visible!important; }
-  body.proforma-printing #proformaView { display:block!important; position:absolute; left:0; top:0; width:100%; max-width:none; margin:0; padding:12px; border:0; box-shadow:none; }
-  body.proforma-printing #proformaView .no-print { display:none!important; }
-  body.proforma-printing #proformaView input, body.proforma-printing #proformaView textarea { border:0!important; padding:2px!important; }
-  body.proforma-printing #proformaView .btn { display:none!important; }
+/* =====================================================================
+   PROFORMA INVOICE DEDICATED PRINT & PDF LAYOUT
+   Matches Bhavani Enterprises reference specification exactly
+   Applied exclusively to proforma print & PDF download output
+   ===================================================================== */
+#proformaPrintContainer {
+  display: none;
 }
 
-/* Proforma dashboard styling: professional navy/white document treatment */
-#proformaView{border-radius:4px!important;border-color:#cbd5e1!important;box-shadow:0 5px 22px rgba(15,35,60,.08)!important;color:#172b43}
-#proformaView h1{letter-spacing:.4px}
-#proformaView label{color:#26364a;font-size:13px;font-weight:600}
-#proformaView input:not([type=checkbox]),#proformaView textarea{background:#fff;color:#172b43;font-size:13px}
-#proformaView #pfItems th{font-size:12px;letter-spacing:.15px}
-#proformaView #pfItems td{vertical-align:middle}
-#proformaView #pfFixedTerms{background:#f0f5fb!important;border-color:#d4e0ee!important}
-#proformaView #pfSignatureFooter{border-top:1px solid #17365d!important}
-#proformaView #pfClientSignatureSeal{break-inside:avoid;page-break-inside:avoid}
-@media(max-width:640px){#proformaView #pfSignatureFooter>div{min-width:100%!important;flex-basis:100%!important}#proformaView #pfClientSignatureSeal{max-width:320px;margin:8px auto}}
-#proformaView #pfComputerGenerated{border-top:1px solid #17365d;padding-top:8px;color:#334155!important}
-#proformaView .pf-company-header{color:#17365d}
-@media print{#proformaView{font-size:11px!important}#proformaView .pf-company-header{padding-bottom:8px!important;margin-bottom:10px!important}#proformaView #pfAmountWords{break-inside:avoid;page-break-inside:avoid}}
-#proformaView #pfGrand{font-weight:800}
-@media print{
-  @page{size:A4 portrait;margin:8mm}
-  body.proforma-printing #proformaView{font-size:11px!important;padding:4mm!important;width:100%!important;background:#fff!important}
-  body.proforma-printing #proformaView input,body.proforma-printing #proformaView textarea{font-size:11px!important;color:#111!important;background:transparent!important;resize:none!important}
-  body.proforma-printing #proformaView label{font-size:10px!important}
-  body.proforma-printing #proformaView #pfFixedTerms{background:#f0f5fb!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-  body.proforma-printing #proformaView #pfGrand{font-size:16px!important}
-  body.proforma-printing #proformaView #pfSignatureFooter,body.proforma-printing #proformaView #pfFixedTerms,body.proforma-printing #proformaView table,body.proforma-printing #proformaView > div:first-child{break-inside:avoid;page-break-inside:avoid}
+.pf-doc-wrapper {
+  box-sizing: border-box;
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  padding: 10mm 12mm;
+  background: #ffffff !important;
+  color: #172b43;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+.pf-doc-wrapper * {
+  box-sizing: border-box;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+/* Header */
+.pf-doc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 6px;
+}
+.pf-doc-company-title {
+  font-family: 'Barlow Condensed', 'Inter', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  color: #17365d;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  line-height: 1.1;
+  margin-bottom: 3px;
+}
+.pf-doc-company-sub {
+  font-size: 11.5px;
+  color: #475569;
+  font-weight: 500;
+}
+.pf-doc-contact {
+  text-align: right;
+  font-size: 9.5px;
+  color: #475569;
+  line-height: 1.45;
+  max-width: 54%;
+}
+.pf-doc-divider {
+  height: 2px;
+  background: #17365d;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+/* Document Title */
+.pf-doc-title-block {
+  text-align: center;
+  margin-bottom: 12px;
+}
+.pf-doc-main-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #17365d;
+  letter-spacing: 0.8px;
+  margin-bottom: 3px;
+}
+.pf-doc-sub-title {
+  font-size: 10.5px;
+  color: #64748b;
+  font-weight: 400;
+}
+
+/* 4-column summary strip */
+.pf-doc-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #f1f5fa !important;
+  margin-bottom: 12px;
+}
+.pf-doc-summary-cell {
+  padding: 8px 12px;
+  border-right: 1px solid #cbd5e1;
+}
+.pf-doc-summary-cell:last-child {
+  border-right: none;
+}
+.pf-doc-summary-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.pf-doc-summary-val {
+  font-size: 12px;
+  font-weight: 800;
+  color: #17365d;
+  overflow-wrap: break-word;
+}
+
+/* Customer details grid */
+.pf-doc-cust-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px 10px;
+  margin-bottom: 12px;
+}
+.pf-doc-cust-field {
+  min-width: 0;
+}
+.pf-doc-cust-full {
+  grid-column: 1 / -1;
+}
+.pf-doc-field-label {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 3px;
+}
+.pf-doc-field-box {
+  background: #edf3fa !important;
+  border: 1px solid #d7e4f2;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #17365d;
+  min-height: 25px;
+  overflow-wrap: break-word;
+}
+.pf-doc-address-box {
+  min-height: 36px;
+  white-space: pre-wrap;
+}
+
+/* Items Table */
+.pf-doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+  table-layout: fixed;
+}
+.pf-doc-table thead tr {
+  background: #17365d !important;
+  color: #ffffff !important;
+}
+.pf-doc-table th {
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  border: none;
+}
+.pf-doc-table td {
+  padding: 4px;
+  vertical-align: middle;
+  border: none;
+}
+.pf-doc-cell-box {
+  background: #edf3fa !important;
+  border: 1px solid #d7e4f2;
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #17365d;
+  overflow-wrap: break-word;
+}
+.pf-doc-cell-desc {
+  text-align: left;
+  white-space: pre-wrap;
+}
+.pf-doc-cell-center {
+  text-align: center;
+}
+.pf-doc-cell-amt {
+  padding: 5px 8px;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 700;
+  color: #17365d;
+}
+
+/* Totals section */
+.pf-doc-totals-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.pf-doc-words-card {
+  flex: 1 1 50%;
+  background: #edf3fa !important;
+  border-radius: 6px;
+  padding: 10px 14px;
+  min-height: 64px;
+}
+.pf-doc-words-title {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #17365d;
+  margin-bottom: 4px;
+}
+.pf-doc-words-val {
+  font-size: 11px;
+  color: #334155;
+  line-height: 1.45;
+}
+.pf-doc-calc-card {
+  flex: 0 0 320px;
+  width: 320px;
+}
+.pf-doc-calc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+  font-size: 10.5px;
+  color: #334155;
+}
+.pf-doc-gst-pill {
+  background: #edf3fa !important;
+  border: 1px solid #d7e4f2;
+  border-radius: 4px;
+  padding: 3px 14px;
+  font-weight: 700;
+  color: #17365d;
+  font-size: 10.5px;
+}
+.pf-doc-grand-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #edf3fa !important;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-top: 6px;
+  color: #17365d;
+  font-size: 13.5px;
+  font-weight: 800;
+}
+
+/* Advance and terms */
+.pf-doc-adv-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+/* Terms and conditions */
+.pf-doc-terms-panel {
+  background: #f8fafc !important;
+  border: 1px solid #d9e1ea;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 18px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.pf-doc-terms-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #17365d;
+  margin-bottom: 5px;
+}
+.pf-doc-terms-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 10px;
+  color: #334155;
+  line-height: 1.6;
+}
+
+/* Footer signatures */
+.pf-doc-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-top: 14px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.pf-doc-footer-pan {
+  flex: 1 1 28%;
+  font-size: 10px;
+  color: #334155;
+}
+.pf-doc-footer-cust-seal {
+  flex: 1 1 36%;
+  text-align: center;
+}
+.pf-doc-seal-box {
+  width: 170px;
+  height: 52px;
+  border: 1px dashed #94a3b8;
+  border-radius: 4px;
+  margin: 0 auto 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9.5px;
+  color: #64748b;
+}
+.pf-doc-seal-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #17365d;
+}
+.pf-doc-seal-sub {
+  font-size: 9px;
+  color: #64748b;
+  margin-top: 2px;
+}
+.pf-doc-footer-auth {
+  flex: 1 1 28%;
+  text-align: center;
+}
+.pf-doc-auth-for {
+  font-size: 10px;
+  color: #17365d;
+}
+.pf-doc-auth-space {
+  height: 36px;
+  border-bottom: 1px solid #94a3b8;
+  margin: 0 16px 5px;
+}
+.pf-doc-auth-line {
+  font-size: 10px;
+  color: #334155;
+}
+.pf-doc-computer-gen {
+  text-align: center;
+  font-size: 9px;
+  color: #64748b;
+  margin-top: 10px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 5px;
+}
+
+/* Print Specific Rules */
+@media print {
+  body.proforma-printing * {
+    visibility: hidden !important;
+  }
+  body.proforma-printing #proformaPrintContainer,
+  body.proforma-printing #proformaPrintContainer * {
+    visibility: visible !important;
+  }
+  body.proforma-printing #proformaPrintContainer {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 210mm;
+    margin: 0 auto;
+    padding: 0;
+    background: #ffffff !important;
+  }
+  body.proforma-printing .no-print {
+    display: none !important;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
 }
 
 </style>
@@ -1146,7 +1504,13 @@ function bindEvents(){
   pfCompanySearch.addEventListener('focus', renderProformaCompanySuggestions);
   pfCompanySearch.addEventListener('keydown', e => { if(e.key === 'Escape') hideProformaCompanySuggestions(); });
   const btnPfPrint = document.getElementById('btnPfPrint');
-  if (btnPfPrint) btnPfPrint.addEventListener('click', () => { calculateProforma(); document.body.classList.add('proforma-printing'); window.print(); setTimeout(() => document.body.classList.remove('proforma-printing'), 500); });
+  if (btnPfPrint) btnPfPrint.addEventListener('click', () => {
+    calculateProforma();
+    populateProformaPrintDocument();
+    document.body.classList.add('proforma-printing');
+    window.print();
+    setTimeout(() => document.body.classList.remove('proforma-printing'), 1000);
+  });
   document.getElementById('pfGst').addEventListener('input', calculateProforma);
   ['pfNo','pfDate','pfValidUntil','pfQuoteRef'].forEach(id=>document.getElementById(id).addEventListener('input',calculateProforma));
   document.getElementById('pfAdvance').addEventListener('input', calculateProforma);
@@ -1694,143 +2058,279 @@ function numberToIndianWords(n){
   function under1000(x){let out='';if(x>=100){out+=ones[Math.floor(x/100)]+' Hundred';x%=100;if(x)out+=' ';}if(x>=20){out+=tens[Math.floor(x/10)];if(x%10)out+=' '+ones[x%10];}else if(x>0)out+=ones[x];return out;}
   let out='';const units=[[10000000,'Crore'],[100000,'Lakh'],[1000,'Thousand'],[1,'']];for(const [v,label] of units){if(n>=v){const q=Math.floor(n/v);out+=(out?' ':'')+under1000(q)+(label?' '+label:'');n%=v;}}return out;
 }
+function populateProformaPrintDocument() {
+  calculateProforma();
+  let container = document.getElementById('proformaPrintContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'proformaPrintContainer';
+    document.body.appendChild(container);
+  }
+
+  const pfNo = (document.getElementById('pfNo').value || '').trim() || '—';
+  const pfDate = formatPfDate(document.getElementById('pfDate').value);
+  const pfValidUntil = formatPfDate(document.getElementById('pfValidUntil').value);
+  const pfQuoteRef = (document.getElementById('pfQuoteRef').value || '').trim() || '—';
+
+  const buyer = (document.getElementById('pfBuyer').value || '').trim() || '—';
+  const gstin = (document.getElementById('pfGstin').value || '').trim() || '—';
+  const project = (document.getElementById('pfProject').value || '').trim() || '—';
+  const supply = (document.getElementById('pfSupply').value || '').trim() || '—';
+  const address = (document.getElementById('pfAddress').value || '').trim() || '—';
+
+  const rows = [];
+  document.querySelectorAll('#pfItems tr').forEach(tr => {
+    const desc = (tr.querySelector('.pf-desc')?.value || '').trim() || '—';
+    const hsn = (tr.querySelector('.pf-hsn')?.value || '').trim() || '—';
+    const qty = (tr.querySelector('.pf-qty')?.value || '').trim() || '1';
+    const rate = (tr.querySelector('.pf-rate')?.value || '').trim() || '0';
+    const amt = (tr.querySelector('.pf-amount')?.textContent || '').trim() || '₹0.00';
+    rows.push(`
+      <tr>
+        <td><div class="pf-doc-cell-box pf-doc-cell-desc">${escHtml(desc)}</div></td>
+        <td><div class="pf-doc-cell-box pf-doc-cell-center">${escHtml(hsn)}</div></td>
+        <td><div class="pf-doc-cell-box pf-doc-cell-center">${escHtml(qty)}</div></td>
+        <td><div class="pf-doc-cell-box pf-doc-cell-center">${escHtml(rate)}</div></td>
+        <td class="pf-doc-cell-amt">${escHtml(amt)}</td>
+      </tr>
+    `);
+  });
+
+  const subtotal = document.getElementById('pfSubtotal').textContent || '₹0.00';
+  const gstPct = (document.getElementById('pfGst').value || '18').trim();
+  const tax = document.getElementById('pfTax').textContent || '₹0.00';
+  const round = document.getElementById('pfRound').textContent || '₹0.00';
+  const grand = document.getElementById('pfGrand').textContent || '₹0.00';
+  const words = document.getElementById('pfAmountWordsText').textContent || 'Indian Rupees Zero Only.';
+
+  const advance = (document.getElementById('pfAdvance').value || '').trim() || '0';
+  const terms = (document.getElementById('pfTerms').value || '').trim() || '—';
+  const pan = COMPANY_DETAILS.pan || 'AALPU3738N';
+  const companyName = COMPANY_DETAILS.name || 'BHAVANI ENTERPRISES';
+  const companyAddr = COMPANY_DETAILS.address || 'No.281/1,60ft Road,Gidadakonenhalli,8th Block,M.Vishveshwaraya Layout,Muddinapalaya,Bengaluru-560091';
+  const companyContact = (COMPANY_DETAILS.mobile ? 'Mobile: ' + COMPANY_DETAILS.mobile : '') +
+    (COMPANY_DETAILS.mobile && COMPANY_DETAILS.email ? ' · ' : '') +
+    (COMPANY_DETAILS.email ? 'Email: ' + COMPANY_DETAILS.email : '');
+
+  container.innerHTML = `
+    <div class="pf-doc-wrapper" id="pfDocWrapper">
+      <div class="pf-doc-header">
+        <div>
+          <div class="pf-doc-company-title">${escHtml(companyName)}</div>
+          <div class="pf-doc-company-sub">Aluminium Fabrication | UPVC Window Plant (Unit-2)</div>
+        </div>
+        <div class="pf-doc-contact">
+          <div>${escHtml(companyAddr)}</div>
+          <div>${escHtml(companyContact)}</div>
+        </div>
+      </div>
+      <div class="pf-doc-divider"></div>
+
+      <div class="pf-doc-title-block">
+        <div class="pf-doc-main-title">PROFORMA INVOICE</div>
+        <div class="pf-doc-sub-title">Preliminary document · Not a tax invoice</div>
+      </div>
+
+      <div class="pf-doc-summary-strip">
+        <div class="pf-doc-summary-cell">
+          <div class="pf-doc-summary-label">PROFORMA INVOICE NO.</div>
+          <div class="pf-doc-summary-val">${escHtml(pfNo)}</div>
+        </div>
+        <div class="pf-doc-summary-cell">
+          <div class="pf-doc-summary-label">ISSUE DATE</div>
+          <div class="pf-doc-summary-val">${escHtml(pfDate)}</div>
+        </div>
+        <div class="pf-doc-summary-cell">
+          <div class="pf-doc-summary-label">VALID UNTIL</div>
+          <div class="pf-doc-summary-val">${escHtml(pfValidUntil)}</div>
+        </div>
+        <div class="pf-doc-summary-cell">
+          <div class="pf-doc-summary-label">QUOTATION REFERENCE</div>
+          <div class="pf-doc-summary-val">${escHtml(pfQuoteRef)}</div>
+        </div>
+      </div>
+
+      <div class="pf-doc-cust-grid">
+        <div class="pf-doc-cust-field">
+          <div class="pf-doc-field-label">Customer / Company</div>
+          <div class="pf-doc-field-box">${escHtml(buyer)}</div>
+        </div>
+        <div class="pf-doc-cust-field">
+          <div class="pf-doc-field-label">GSTIN</div>
+          <div class="pf-doc-field-box">${escHtml(gstin)}</div>
+        </div>
+        <div class="pf-doc-cust-field">
+          <div class="pf-doc-field-label">Project Name</div>
+          <div class="pf-doc-field-box">${escHtml(project)}</div>
+        </div>
+        <div class="pf-doc-cust-field">
+          <div class="pf-doc-field-label">Place of Supply</div>
+          <div class="pf-doc-field-box">${escHtml(supply)}</div>
+        </div>
+        <div class="pf-doc-cust-field pf-doc-cust-full">
+          <div class="pf-doc-field-label">Billing Address</div>
+          <div class="pf-doc-field-box pf-doc-address-box">${escHtml(address)}</div>
+        </div>
+      </div>
+
+      <table class="pf-doc-table">
+        <thead>
+          <tr>
+            <th style="width: 40%; text-align: left;">Description</th>
+            <th style="width: 14%; text-align: center;">HSN</th>
+            <th style="width: 10%; text-align: center;">Qty</th>
+            <th style="width: 16%; text-align: center;">Rate (₹)</th>
+            <th style="width: 20%; text-align: right;">Amount (₹)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.join('')}
+        </tbody>
+      </table>
+
+      <div class="pf-doc-totals-section">
+        <div class="pf-doc-words-card">
+          <div class="pf-doc-words-title">Amount in Words</div>
+          <div class="pf-doc-words-val">${escHtml(words)}</div>
+        </div>
+        <div class="pf-doc-calc-card">
+          <div class="pf-doc-calc-row"><span>Subtotal</span><strong>${escHtml(subtotal)}</strong></div>
+          <div class="pf-doc-calc-row">
+            <span>GST %</span>
+            <span class="pf-doc-gst-pill">${escHtml(gstPct)}</span>
+          </div>
+          <div class="pf-doc-calc-row"><span>GST Amount</span><strong>${escHtml(tax)}</strong></div>
+          <div class="pf-doc-calc-row"><span>Round Off</span><strong>${escHtml(round)}</strong></div>
+          <div class="pf-doc-grand-row">
+            <span>Grand Total</span>
+            <strong>${escHtml(grand)}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="pf-doc-adv-grid">
+        <div class="pf-doc-cust-field">
+          <div class="pf-doc-field-label">Advance Payment (₹)</div>
+          <div class="pf-doc-field-box">${escHtml(advance)}</div>
+        </div>
+        <div class="pf-doc-cust-field">
+          <div class="pf-doc-field-label">Payment Terms</div>
+          <div class="pf-doc-field-box">${escHtml(terms)}</div>
+        </div>
+      </div>
+
+      <div class="pf-doc-terms-panel">
+        <div class="pf-doc-terms-title">Terms and Conditions</div>
+        <ol class="pf-doc-terms-list">
+          <li>This is a preliminary estimate and not a tax invoice.</li>
+          <li>Prices are valid until the date specified above.</li>
+          <li>Advance payment and delivery terms are subject to agreement.</li>
+          <li>Final invoice will be issued as applicable upon supply of goods or completion of work.</li>
+        </ol>
+      </div>
+
+      <div class="pf-doc-footer-row">
+        <div class="pf-doc-footer-pan">
+          Company's PAN: <strong>${escHtml(pan)}</strong>
+        </div>
+        <div class="pf-doc-footer-cust-seal">
+          <div class="pf-doc-seal-box">Signature / Seal</div>
+          <div class="pf-doc-seal-title">Customer's Signature &amp; Seal</div>
+          <div class="pf-doc-seal-sub">Accepted by customer</div>
+        </div>
+        <div class="pf-doc-footer-auth">
+          <div class="pf-doc-auth-for">For <strong>${escHtml(companyName)}</strong></div>
+          <div class="pf-doc-auth-space"></div>
+          <div class="pf-doc-auth-line">Authorised Signatory</div>
+        </div>
+      </div>
+
+      <div class="pf-doc-computer-gen">This is a computer-generated proforma invoice and does not require a physical signature.</div>
+    </div>
+  `;
+  return container.firstElementChild;
+}
+
 async function downloadProformaPdf() {
   calculateProforma();
   const btn = document.getElementById('btnPfDownloadPdf');
   const oldText = btn.textContent;
   btn.textContent = 'Generating PDF…';
   btn.disabled = true;
-  let wrapper = null;
+
   try {
     if (!window.html2canvas || !window.jspdf?.jsPDF) {
-      alert('Offline PDF mode: choose “Save as PDF” in the print dialog.');
-      document.body.classList.contains('proforma-open') ? (document.body.classList.add('proforma-printing'), window.print()) : window.print();
+      console.error('PDF libraries html2canvas or jsPDF are not loaded.');
+      alert('PDF generation engine is initializing. Please try again in a moment.');
       return;
     }
     if (document.fonts?.ready) await document.fonts.ready;
-    const clone = document.getElementById('proformaView').cloneNode(true);
-    clone.id = 'proformaPdfClone';
-    clone.style.display = 'block';
-    clone.style.width = '1000px';
-    clone.style.maxWidth = '1000px';
-    clone.style.margin = '0';
-    clone.style.padding = '20px';
-    clone.style.border = '0';
-    clone.style.borderRadius = '0';
-    clone.style.boxShadow = 'none';
-    clone.style.position = 'static';
 
-    // Build a PDF-only header: company heading, centered document title, then one summary strip.
-    // The live editing screen is not modified by these changes.
-    const pdfHeader = clone.querySelector('.pf-company-header');
-    if (pdfHeader) {
-      // Align company identity on the left and contact details on the right in one stable row.
-      pdfHeader.style.cssText = 'display:flex;flex-direction:row;justify-content:space-between;align-items:center;flex-wrap:nowrap;gap:20px;width:100%;margin:0 0 14px;padding:0 0 12px;border-bottom:2px solid #17365d;box-sizing:border-box';
-      const companyBlock = pdfHeader.firstElementChild;
-      const companyName = companyBlock?.firstElementChild;
-      const subtitle = companyBlock?.children?.[1];
-      if (companyBlock) companyBlock.style.cssText = 'flex:0 1 44%;width:44%;min-width:0;text-align:left;margin:0;overflow-wrap:anywhere';
-      if (companyName) companyName.style.cssText = "font-family:'Barlow Condensed',Impact,sans-serif;font-size:30px;line-height:1.1;letter-spacing:1.2px;color:#17365d;font-weight:700;text-transform:uppercase;margin:0 0 3px;white-space:nowrap";
-      if (subtitle) subtitle.style.cssText = 'font-size:16px;line-height:1.35;color:#17365d;margin-top:4px';
-      const contact = pdfHeader.children[1];
-      if (contact) contact.style.cssText = 'flex:1 1 0;width:auto;min-width:0;max-width:none;margin:0;text-align:right;align-self:center;font-size:12px;color:#334155;line-height:1.55;overflow-wrap:anywhere;word-break:normal';
-    }
-    const oldTitleSummary = pdfHeader?.nextElementSibling;
-    if (oldTitleSummary) {
-      const titleBlock = document.createElement('div');
-      titleBlock.style.cssText = 'text-align:center;margin:14px 0 10px;padding:0 0 8px';
-      titleBlock.innerHTML = '<div style="font-family:Inter,Arial,sans-serif;font-size:25px;font-weight:800;letter-spacing:1px;color:#17365d">PROFORMA INVOICE</div><div style="font-size:12px;color:#66758a;margin-top:4px">Preliminary document · Not a tax invoice</div>';
-      const summary = document.createElement('div');
-      summary.style.cssText = 'display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden;margin-bottom:18px;background:#f3f7fc';
-      const summaryItems = [
-        ['PROFORMA INVOICE NO.', document.getElementById('pfNo').value || '—'],
-        ['ISSUE DATE', formatPfDate(document.getElementById('pfDate').value)],
-        ['VALID UNTIL', formatPfDate(document.getElementById('pfValidUntil').value)],
-        ['QUOTATION REFERENCE', document.getElementById('pfQuoteRef').value || '—']
-      ];
-      summaryItems.forEach(([label,value], index) => {
-        const cell = document.createElement('div');
-        cell.style.cssText = `padding:10px 12px;min-width:0;${index ? 'border-left:1px solid #d7e1ee;' : ''}`;
-        const heading = document.createElement('div'); heading.textContent = label;
-        heading.style.cssText = 'font-size:10px;font-weight:700;letter-spacing:.45px;color:#64748b;margin-bottom:5px';
-        const val = document.createElement('div'); val.textContent = value || '—';
-        val.style.cssText = 'font-size:13px;font-weight:800;color:#17365d;overflow-wrap:anywhere';
-        cell.append(heading,val); summary.appendChild(cell);
-      });
-      oldTitleSummary.replaceWith(titleBlock, summary);
-    }
+    const docElem = populateProformaPrintDocument();
 
-    // The summary strip above is the only place the four document-reference fields appear in the PDF.
-    ['pfNo','pfDate','pfValidUntil','pfQuoteRef'].forEach(id => {
-      const input = clone.querySelector('#' + id);
-      const label = input?.closest('label');
-      if (label) label.remove();
-    });
-    clone.querySelectorAll('.no-print, button, input[type="file"]').forEach(el => el.remove());
-    // Convert form controls to printable text. Labels and values stack vertically; values are bold and highlighted.
-    clone.querySelectorAll('input, textarea, select').forEach(el => {
-      const span = document.createElement('span');
-      let value = el.value || '';
-      if (el.id === 'pfDate' || el.id === 'pfValidUntil') value = formatPfDate(value);
-      span.textContent = value || '—';
-      span.style.cssText = 'display:block;box-sizing:border-box;width:100%;min-height:22px;white-space:pre-wrap;overflow-wrap:anywhere;color:#17365d;font-weight:700;background:#edf3fa;border:1px solid #d7e4f2;border-radius:4px;padding:5px 7px;margin-top:4px';
-      el.replaceWith(span);
-    });
-    clone.querySelectorAll('label').forEach(label => {
-      label.style.cssText += ';display:block;min-width:0;font-size:11px;font-weight:700;color:#52627a;line-height:1.35';
-      const textNode = [...label.childNodes].find(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim());
-      if (textNode) textNode.textContent = textNode.textContent.trim();
-    });
-    clone.querySelectorAll('#pfItems tr').forEach(tr => {
-      // The .no-print action cell was already removed above. Do not remove
-      // the final remaining cell: it is the calculated Amount column.
-      if (tr.lastElementChild?.classList.contains('no-print')) tr.lastElementChild.remove();
-      tr.querySelectorAll('input').forEach(el => {
-        const span = document.createElement('span'); span.textContent = el.value || '—';
-        span.style.cssText = 'display:block;white-space:pre-wrap;overflow-wrap:anywhere;padding:3px 0'; el.replaceWith(span);
-      });
-    });
-    clone.querySelectorAll('#pfItems th.no-print, #pfItems td.no-print').forEach(el => el.remove());
-    clone.querySelectorAll('label').forEach(label => {
-      const textNode = [...label.childNodes].find(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim());
-      if (textNode) textNode.textContent = textNode.textContent.trim() + ' ';
-    });
-    wrapper = document.createElement('div');
-    wrapper.style.cssText = 'position:fixed;left:-12000px;top:0;width:1000px;background:#fff;z-index:-1';
-    wrapper.appendChild(clone); document.body.appendChild(wrapper);
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;background:#ffffff;z-index:-1;';
+    const clone = docElem.cloneNode(true);
+    clone.style.width = '794px';
+    wrapper.appendChild(clone);
+    document.body.appendChild(wrapper);
+
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    const canvas = await html2canvas(clone, {scale:2, useCORS:true, backgroundColor:'#ffffff', logging:false, width:1000, windowWidth:1000});
+
+    const canvas = await html2canvas(clone, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      width: 794,
+      windowWidth: 794
+    });
+
+    wrapper.remove();
+
     const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p','mm','a4');
-    const pageWidth = 210, pageHeight = 297, margin = 8;
-    const usableWidth = pageWidth - margin * 2;
-    const imageHeight = canvas.height * usableWidth / canvas.width;
-    const imgData = canvas.toDataURL('image/jpeg', 0.94);
-    let remaining = imageHeight, y = margin;
-    let offset = 0;
-    while (remaining > 0) {
-      const sliceHeightMm = Math.min(pageHeight - margin * 2, remaining);
-      const sourceHeight = Math.round(sliceHeightMm * canvas.width / usableWidth);
-      const pageCanvas = document.createElement('canvas');
-      pageCanvas.width = canvas.width; pageCanvas.height = Math.min(sourceHeight, canvas.height - offset);
-      const ctx = pageCanvas.getContext('2d');
-      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,pageCanvas.width,pageCanvas.height);
-      ctx.drawImage(canvas, 0, offset, canvas.width, pageCanvas.height, 0, 0, pageCanvas.width, pageCanvas.height);
-      const pageImage = pageCanvas.toDataURL('image/jpeg',0.94);
-      if (offset > 0) pdf.addPage();
-      const actualHeight = pageCanvas.height * usableWidth / canvas.width;
-      pdf.addImage(pageImage,'JPEG',margin,margin,usableWidth,actualHeight,undefined,'FAST');
-      offset += pageCanvas.height; remaining -= actualHeight;
-      if (pageCanvas.height <= 0) break;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+    if (imgHeight <= pageHeight) {
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+    } else {
+      let remaining = imgHeight;
+      let offset = 0;
+      while (remaining > 0) {
+        const sliceMm = Math.min(pageHeight, remaining);
+        const sliceCanvasHeight = Math.round(sliceMm * canvas.width / imgWidth);
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = Math.min(sliceCanvasHeight, canvas.height - offset);
+        const ctx = pageCanvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+        ctx.drawImage(canvas, 0, offset, canvas.width, pageCanvas.height, 0, 0, pageCanvas.width, pageCanvas.height);
+        const pageData = pageCanvas.toDataURL('image/jpeg', 0.95);
+        if (offset > 0) pdf.addPage();
+        const actualMm = pageCanvas.height * imgWidth / canvas.width;
+        pdf.addImage(pageData, 'JPEG', 0, 0, imgWidth, actualMm, undefined, 'FAST');
+        offset += pageCanvas.height;
+        remaining -= actualMm;
+        if (pageCanvas.height <= 0) break;
+      }
     }
-    const no = document.getElementById('pfNo').value.trim() || 'proforma-invoice';
-    pdf.save(`${no.replace(/[^a-z0-9._-]/gi,'_')}.pdf`);
+
+    const rawPfNo = (document.getElementById('pfNo').value || '').trim();
+    const cleanPfNo = rawPfNo ? rawPfNo.replace(/[^a-zA-Z0-9_-]/g, '-') : '';
+    const filename = cleanPfNo ? `Proforma-Invoice-${cleanPfNo}.pdf` : 'Proforma-Invoice.pdf';
+    pdf.save(filename);
   } catch (err) {
-    console.error(err);
-    alert('Could not generate the PDF download. Check your internet connection and try again.');
+    console.error('[Proforma PDF Generation Error]', err);
+    alert('Failed to generate Proforma PDF. Please try again.');
   } finally {
-    if (wrapper) wrapper.remove();
-    btn.textContent = oldText; btn.disabled = false;
+    btn.textContent = oldText;
+    btn.disabled = false;
   }
 }
 
@@ -2138,14 +2638,14 @@ async function downloadPdf(){
   calculateTotals();
   const btn = document.getElementById('btnPdf');
   const originalLabel = btn.textContent;
-  btn.textContent = 'Generating…';
+  btn.textContent = 'Generating PDF…';
   btn.disabled = true;
 
   let wrapper = null;
   try {
     if (!window.html2canvas || !window.jspdf?.jsPDF) {
-      alert('Offline PDF mode: choose “Save as PDF” in the print dialog.');
-      window.print();
+      console.error('PDF libraries html2canvas or jsPDF are not loaded.');
+      alert('PDF generation engine is initializing. Please try again in a moment.');
       return;
     }
     if (document.fonts && document.fonts.ready) {
@@ -2189,11 +2689,13 @@ async function downloadPdf(){
       heightLeft -= pageHeight;
     }
 
-    const invoiceNo = document.getElementById('invoiceNo').value || 'invoice';
-    pdf.save(`${invoiceNo}.pdf`);
+    const rawInvNo = (document.getElementById('invoiceNo').value || '').trim();
+    const cleanInvNo = rawInvNo ? rawInvNo.replace(/[^a-zA-Z0-9_-]/g, '-') : '';
+    const filename = cleanInvNo ? `Tax-Invoice-${cleanInvNo}.pdf` : 'Tax-Invoice.pdf';
+    pdf.save(filename);
   } catch(err){
-    console.error(err);
-    alert('Direct PDF export is unavailable in this offline build. The browser print dialog will open; choose “Save as PDF” to create a PDF without internet.'); window.print();
+    console.error('[Tax Invoice PDF Generation Error]', err);
+    alert('Failed to generate Tax Invoice PDF. Please try again.');
   } finally {
     if (wrapper) wrapper.remove();
     btn.textContent = originalLabel;

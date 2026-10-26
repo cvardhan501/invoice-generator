@@ -1,4 +1,3 @@
-
 {
   "name": "invoice-generator-resend-pin-reset",
   "version": "1.0.0",
@@ -6,12 +5,15 @@
   "description": "Offline-capable Invoice Generator with server-side Resend PIN reset emails",
   "scripts": {
     "start": "node dev-server.js",
-    "test": "node test.js"
+    "test": "node test.js",
+    "test:features": "node test-features.js"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "mongodb": "^7.7.0"
   }
 }

@@ -24,7 +24,15 @@ function loadEnv(file) {
   }
 }
 
-loadEnv(path.join(ROOT, '.env'));
+const candidateEnvPaths = [
+  path.join(ROOT, '.env'),
+  path.join(process.cwd(), '.env'),
+  path.join(ROOT, 'invoice generator', '.env'),
+  path.join(process.cwd(), 'invoice generator', '.env')
+];
+for (const p of candidateEnvPaths) {
+  loadEnv(p);
+}
 
 const PORT = Number(process.env.PORT) || 3000;
 const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
@@ -68,8 +76,17 @@ const STATIC_FILES_MAP = new Map([
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
   '.ico': 'image/x-icon',
-  '.json': 'application/json; charset=utf-8'
+  '.json': 'application/json; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
+  '.ttf': 'font/ttf',
+  '.pdf': 'application/pdf'
 };
 
 const server = http.createServer(async (req, res) => {
@@ -103,7 +120,7 @@ const server = http.createServer(async (req, res) => {
       try {
         await handler(req, res);
       } catch (err) {
-        console.error(`[API Handler Error ${pathname}]`, err);
+        console.error(`[API Handler Error ${pathname}]`, err.message);
         if (!res.headersSent) {
           res.writeHead(500, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ ok: false, error: 'Internal server error.' }));
@@ -119,21 +136,38 @@ const server = http.createServer(async (req, res) => {
   // Static File Server (serves from public/)
   let decodedPath = '';
   try {
-    decodedPath = decodeURIComponent(url.pathname).toLowerCase();
+    decodedPath = decodeURIComponent(url.pathname);
   } catch {
     res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
     return res.end('Invalid path');
   }
 
-  const targetFile = STATIC_FILES_MAP.get(decodedPath);
-  if (!targetFile) {
+  // Security: block access to sensitive files or directory traversal
+  if (decodedPath.includes('.env') || decodedPath.includes('..') || decodedPath.includes('.git') || decodedPath.includes('.admin-auth')) {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
     return res.end('Not found');
   }
 
-  const targetPath = path.join(PUBLIC_DIR, targetFile);
-  fs.readFile(targetPath, (err, data) => {
-    if (err) {
+  // Alias lookup
+  const lowerPath = decodedPath.toLowerCase();
+  let targetFile = STATIC_FILES_MAP.get(lowerPath);
+  let targetPath;
+  if (targetFile) {
+    targetPath = path.join(PUBLIC_DIR, targetFile);
+  } else {
+    const relPath = decodedPath.replace(/^\/+/, '');
+    targetPath = path.resolve(PUBLIC_DIR, relPath);
+  }
+
+  // Guard against path traversal outside PUBLIC_DIR
+  const normalizedPublic = path.resolve(PUBLIC_DIR);
+  if (!targetPath.startsWith(normalizedPublic)) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+    return res.end('Forbidden');
+  }
+
+  fs.stat(targetPath, (err, stats) => {
+    if (err || !stats.isFile()) {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       return res.end('Not found');
     }
@@ -144,7 +178,7 @@ const server = http.createServer(async (req, res) => {
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'strict-origin-when-cross-origin'
     });
-    res.end(data);
+    fs.createReadStream(targetPath).pipe(res);
   });
 });
 
