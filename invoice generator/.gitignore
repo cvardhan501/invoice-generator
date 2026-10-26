@@ -1,8 +1,0 @@
-.env
-.env.local
-.env.*.local
-node_modules/
-.vercel/
-.admin-auth.*
-.pin-reset-tokens.json
-*.log
