@@ -130,7 +130,7 @@ async function runTests() {
   process.env.NODE_ENV = 'test';
 
   // Start local server running Vercel serverless function handlers
-  const { server } = require('./server.js');
+  const { server } = require('./dev-server.js');
   await new Promise(resolve => server.listen(TEST_PORT, resolve));
 
   try {
@@ -456,9 +456,9 @@ async function runTests() {
     // -----------------------------------------------------------------
     console.log('\n--- Phase 7: Invoice Data Isolation & Regression Check ---');
     const invoiceKeysPreserved = homeText.includes('invGen_savedInvoices') &&
-                                 homeText.includes('invGen_draft') &&
-                                 homeText.includes('bhavani_company_master') &&
-                                 !homeText.includes('localStorage.setItem(PIN_STORAGE_KEY');
+      homeText.includes('invGen_draft') &&
+      homeText.includes('bhavani_company_master') &&
+      !homeText.includes('localStorage.setItem(PIN_STORAGE_KEY');
     if (invoiceKeysPreserved) {
       record('Invoice Data Preservation', 'PASS', 'Invoice keys intact; client-side PIN storage completely removed');
     } else {
